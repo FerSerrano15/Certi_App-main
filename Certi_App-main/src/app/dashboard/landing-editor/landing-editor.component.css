@@ -1,0 +1,239 @@
+.le-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.le-toast {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #0f766e;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.le-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.25rem;
+}
+
+.le-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.le-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  max-width: 520px;
+}
+
+.le-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.le-btn-primary,
+.le-btn-secondary {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.le-btn-primary {
+  background: #0f766e;
+  color: #fff;
+}
+
+.le-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.le-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.le-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.le-btn-secondary:hover { background: #e5e7eb; }
+
+.le-loading {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.le-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.le-section-title {
+  margin: 0 0 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.le-subsection-title {
+  margin: 1.4rem 0 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.le-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  flex: 1;
+  min-width: 160px;
+}
+
+.le-field.sm { max-width: 110px; flex: 0 0 auto; }
+
+.le-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.le-field input[type="text"],
+.le-field input[type="email"],
+.le-field input[type="color"],
+.le-field textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+}
+
+.le-field input[type="color"] {
+  padding: 0.2rem;
+  height: 38px;
+  cursor: pointer;
+}
+
+.le-field input:focus,
+.le-field textarea:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.le-field textarea { resize: vertical; }
+
+.le-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.le-array-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.le-array-item input {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.87rem;
+  color: #111827;
+}
+
+.le-array-item input:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.le-card-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem 1rem 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.le-remove-btn {
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.le-remove-btn:hover { background: #fecaca; }
+
+.le-remove-btn.block {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+}
+
+.le-add-btn {
+  border: 1px dashed #0f766e;
+  background: #f0fdfa;
+  color: #0f766e;
+  border-radius: 7px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.le-add-btn:hover { background: #ccfbf1; }
+
+.le-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .le-header { flex-direction: column; }
+  .le-row { flex-direction: column; }
+  .le-field.sm { max-width: none; }
+}

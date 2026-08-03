@@ -1,0 +1,158 @@
+<!-- Attendance Component -->
+<div class="att-wrap">
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="att-toast">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M21 12A9 9 0 11 3 12a9 9 0 0118 0z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/></svg>
+      {{ toast() }}
+    </div>
+  }
+
+  <!-- ════ VISTA: GRUPOS ════ -->
+  @if (view() === 'groups') {
+    <div class="att-header">
+      <div>
+        <h2 class="att-title">✅ Asistencia</h2>
+        <p class="att-subtitle">Selecciona un grupo para registrar asistencia por sesión</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="att-loading"><div class="att-spinner"></div><span>Cargando grupos…</span></div>
+    } @else if (groups().length === 0) {
+      <div class="att-empty">
+        <div class="att-empty-icon">📋</div>
+        <h3>Sin grupos activos</h3>
+        <p>No hay grupos disponibles para registrar asistencia</p>
+      </div>
+    } @else {
+      <div class="att-group-grid">
+        @for (g of groups(); track g.id) {
+          <div class="att-group-card" (click)="openGroup(g)">
+            <div class="att-group-card-top">
+              <span class="att-status-badge" [class]="getStatusColor(g.status)">{{ getStatusLabel(g.status) }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="att-group-name">{{ g.name }}</div>
+            <div class="att-group-course">{{ g.courses?.name ?? 'Curso desconocido' }}</div>
+            @if (g.start_date) {
+              <div class="att-group-dates">📅 {{ g.start_date }} → {{ g.end_date ?? '…' }}</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ════ VISTA: SESIONES DEL GRUPO ════ -->
+  @if (view() === 'sessions') {
+    <div>
+      <div class="att-breadcrumb">
+        <button class="att-back" (click)="backToGroups()">← Grupos</button>
+        <span class="att-sep">/</span>
+        <span>{{ selectedGroup()?.name }}</span>
+      </div>
+
+      <div class="att-section-header">
+        <h3 class="att-section-title">Sesiones de {{ selectedGroup()?.name }}</h3>
+      </div>
+
+      @if (loading()) {
+        <div class="att-loading"><div class="att-spinner"></div><span>Cargando sesiones…</span></div>
+      } @else if (sessions().length === 0) {
+        <div class="att-empty sm">
+          <div class="att-empty-icon">📋</div>
+          <h3>Sin sesiones</h3>
+          <p>Este grupo no tiene sesiones registradas aún</p>
+        </div>
+      } @else {
+        <div class="att-session-list">
+          @for (s of sessions(); track s.id; let i = $index) {
+            <div class="att-session-row" (click)="openSession(s)">
+              <div class="att-session-num">{{ i + 1 }}</div>
+              <div class="att-session-info">
+                <div class="att-session-title">{{ s.title }}</div>
+                <div class="att-session-meta">
+                  📅 {{ s.session_date | date:'EEEE dd/MM/yyyy' }}
+                  @if (s.duration_hours) { · ⏱️ {{ s.duration_hours }}h }
+                </div>
+              </div>
+              <div class="att-session-action">
+                <span>Registrar asistencia</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ════ VISTA: REGISTRO DE ASISTENCIA ════ -->
+  @if (view() === 'attendance') {
+    <div>
+      <div class="att-breadcrumb">
+        <button class="att-back" (click)="backToGroups()">Grupos</button>
+        <span class="att-sep">/</span>
+        <button class="att-back" (click)="backToSessions()">{{ selectedGroup()?.name }}</button>
+        <span class="att-sep">/</span>
+        <span>{{ selectedSession()?.title }}</span>
+      </div>
+
+      <!-- Summary bar -->
+      <div class="att-summary-bar">
+        <div class="att-summary-info">
+          <span class="att-summary-label">Sesión:</span>
+          <span class="att-summary-val">{{ selectedSession()?.session_date | date:'dd/MM/yyyy' }}</span>
+          <span class="att-summary-count">
+            <span class="att-present">{{ presentCount() }}</span> / {{ totalCount() }} presentes
+          </span>
+        </div>
+        <div class="att-summary-actions">
+          <button class="att-btn-secondary" (click)="markAll(true)">✅ Todos presentes</button>
+          <button class="att-btn-secondary" (click)="markAll(false)">❌ Todos ausentes</button>
+          <button class="att-btn-save" (click)="saveAttendance()" [disabled]="saving()">
+            @if (saving()) { <span class="att-spinner sm"></span> }
+            Guardar asistencia
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de participantes -->
+      @if (loading()) {
+        <div class="att-loading"><div class="att-spinner"></div><span>Cargando participantes…</span></div>
+      } @else if (attendanceRows().length === 0) {
+        <div class="att-empty sm">
+          <div class="att-empty-icon">👥</div>
+          <h3>Sin inscritos</h3>
+          <p>No hay participantes inscritos en este grupo</p>
+        </div>
+      } @else {
+        <div class="att-roster">
+          @for (row of attendanceRows(); track row.enrollment_id; let i = $index) {
+            <div class="att-roster-row" [class.att-present-row]="draft()[row.enrollment_id]"
+                 (click)="toggle(row.enrollment_id)">
+              <div class="att-roster-num">{{ i + 1 }}</div>
+              <div class="att-roster-avatar">
+                {{ row.enrollments?.participants?.full_name?.charAt(0)?.toUpperCase() ?? '?' }}
+              </div>
+              <div class="att-roster-info">
+                <div class="att-roster-name">{{ row.enrollments?.participants?.full_name ?? 'Participante' }}</div>
+                <div class="att-roster-id">{{ row.enrollments?.participants?.national_id ?? row.enrollments?.participants?.email }}</div>
+              </div>
+              <div class="att-roster-toggle">
+                @if (draft()[row.enrollment_id]) {
+                  <div class="att-chip present">✅ Presente</div>
+                } @else {
+                  <div class="att-chip absent">❌ Ausente</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+</div>

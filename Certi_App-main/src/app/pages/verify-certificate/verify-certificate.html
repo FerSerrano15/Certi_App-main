@@ -1,0 +1,59 @@
+<div class="verify-page">
+  <div class="verify-card">
+    <a routerLink="/" class="verify-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#2dd4bf"/><path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="14" r="2.5" fill="white"/></svg>
+      <span>CONOCER</span>
+    </a>
+
+    <h1 class="verify-title">Verificar certificado</h1>
+    <p class="verify-subtitle">Ingresa el folio o el código de verificación que aparece en el certificado.</p>
+
+    <div class="verify-form">
+      <input
+        type="text"
+        class="verify-input"
+        placeholder="Ej: EC0217-2026-A1B2C3D4"
+        [value]="reference()"
+        (input)="onInput($event)"
+        (keyup.enter)="verify()">
+      <button class="verify-btn" [disabled]="loading() || !reference().trim()" (click)="verify()">
+        {{ loading() ? 'Verificando…' : 'Verificar' }}
+      </button>
+    </div>
+
+    @if (searched() && !loading()) {
+      @if (result()?.valid) {
+        <div class="verify-result valid">
+          <div class="verify-result-icon">✅</div>
+          <h2>Certificado vigente</h2>
+          <div class="verify-detail-grid">
+            <div><span class="verify-label">Folio</span><span class="verify-value">{{ result()?.folio }}</span></div>
+            <div><span class="verify-label">Candidato</span><span class="verify-value">{{ result()?.participant_name }}</span></div>
+            <div><span class="verify-label">Curso / Estándar</span><span class="verify-value">{{ result()?.course_name }} ({{ result()?.course_code }})</span></div>
+            <div><span class="verify-label">Institución</span><span class="verify-value">{{ result()?.institution_name }}</span></div>
+            <div><span class="verify-label">Emitido</span><span class="verify-value">{{ result()?.issued_at | date:'dd/MM/yyyy' }}</span></div>
+            @if (result()?.expires_at) {
+              <div><span class="verify-label">Vigente hasta</span><span class="verify-value">{{ result()?.expires_at | date:'dd/MM/yyyy' }}</span></div>
+            }
+          </div>
+        </div>
+      } @else if (result() && result()!.folio) {
+        <div class="verify-result invalid">
+          <div class="verify-result-icon">⚠️</div>
+          <h2>Certificado {{ statusLabel(result()?.status) }}</h2>
+          <p>Este folio existe en nuestros registros, pero actualmente no es válido ({{ statusLabel(result()?.status) }}).</p>
+          <div class="verify-detail-grid">
+            <div><span class="verify-label">Folio</span><span class="verify-value">{{ result()?.folio }}</span></div>
+            <div><span class="verify-label">Candidato</span><span class="verify-value">{{ result()?.participant_name }}</span></div>
+          </div>
+        </div>
+      } @else {
+        <div class="verify-result not-found">
+          <div class="verify-result-icon">❌</div>
+          <h2>No encontrado</h2>
+          <p>No existe ningún certificado con ese folio o código de verificación.</p>
+        </div>
+      }
+    }
+  </div>
+</div>

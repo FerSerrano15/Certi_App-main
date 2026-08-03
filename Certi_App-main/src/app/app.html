@@ -1,0 +1,396 @@
+<!-- ===== NAVIGATION ===== -->
+<nav class="navbar" [class.scrolled]="isScrolled">
+  <div class="nav-container">
+    <a class="nav-logo" (click)="scrollTo('hero')">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+          <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-main">CONOCER</span>
+        <span class="logo-sub">Casa Certificadora</span>
+      </div>
+    </a>
+
+    <div class="nav-links" [class.open]="mobileMenuOpen">
+      <a (click)="scrollTo('certificaciones')" class="nav-link">Certificaciones</a>
+      <a (click)="scrollTo('proceso')" class="nav-link">Proceso</a>
+      <a (click)="scrollTo('empresas')" class="nav-link">Para empresas</a>
+      <a (click)="scrollTo('nosotros')" class="nav-link">Nosotros</a>
+      <a (click)="scrollTo('contacto')" class="nav-link">Contacto</a>
+      <a (click)="scrollTo('contacto')" class="btn-nav-cta">Certifícate</a>
+    </div>
+
+    <button class="hamburger" (click)="toggleMobileMenu()" [class.active]="mobileMenuOpen" aria-label="Menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ===== HERO SECTION ===== -->
+<section class="hero" id="hero">
+  <div class="hero-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <div class="hero-container">
+    <div class="hero-badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Reconocido oficialmente</span>
+    </div>
+
+    <h1 class="hero-title">
+      Certifica lo que ya<br>
+      <span class="hero-title-accent">sabes hacer.</span><br>
+      Con validez oficial.
+    </h1>
+
+    <p class="hero-description">
+      En CONOCER acompañamos a personas y empresas a certificar competencias laborales bajo los estándares nacionales de México. Un proceso serio, humano y con reconocimiento oficial.
+    </p>
+
+    <div class="hero-actions">
+      <button class="btn-primary" (click)="scrollTo('certificaciones')">
+        Ver certificaciones
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="btn-secondary" (click)="scrollTo('proceso')">
+        Conocer el proceso
+      </button>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-number">+15</span>
+        <span class="stat-label">Años de experiencia</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number">300+</span>
+        <span class="stat-label">Estándares acreditados</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-number">98%</span>
+        <span class="stat-label">Tasa de aprobación</span>
+      </div>
+    </div>
+
+    <div class="hero-trust">
+      <div class="trust-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" stroke="#2dd4bf" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 12L11 14L15 10" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <span class="trust-title">Certificado oficial</span>
+          <span class="trust-sub">Válido en todo México</span>
+        </div>
+      </div>
+      <div class="trust-institutions">
+        <span class="trust-label">Respaldados por:</span>
+        <div class="institutions-list">
+          <span class="institution-tag">SEP</span>
+          <span class="institution-tag">STPS</span>
+          <span class="institution-tag">SEMS</span>
+          <span class="institution-tag">CONACYT</span>
+          <span class="institution-tag">IMSS</span>
+          <span class="institution-tag">SAT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CERTIFICACIONES SECTION ===== -->
+<section class="section section-light" id="certificaciones">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Nuestras Certificaciones</span>
+      <h2 class="section-title">Estándares para cada etapa profesional</h2>
+      <p class="section-description">
+        Contamos con acreditación en más de 300 estándares de competencia. Estas son algunas de las áreas con mayor demanda.
+      </p>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card" *ngFor="let cert of certifications">
+        <div class="cert-icon-wrap" [style.background]="cert.color + '18'">
+          <span class="cert-icon">{{ cert.icon }}</span>
+        </div>
+        <h3 class="cert-title">{{ cert.title }}</h3>
+        <p class="cert-description">{{ cert.description }}</p>
+        <div class="cert-codes">
+          <span class="cert-code" *ngFor="let code of cert.codes">{{ code }}</span>
+        </div>
+        <a (click)="scrollTo('contacto')" class="cert-link">
+          Solicitar información
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROCESO SECTION ===== -->
+<section class="section section-white" id="proceso">
+  <div class="container">
+    <div class="proceso-layout">
+      <div class="proceso-left">
+        <span class="section-tag">Cómo trabajamos</span>
+        <h2 class="section-title">Un proceso claro, cuatro pasos.</h2>
+        <p class="section-description">
+          Diseñamos cada etapa para que la certificación sea accesible, respetuosa con tu tiempo y con estándares reales de calidad.
+        </p>
+        <a (click)="scrollTo('contacto')" class="proceso-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Agendar diagnóstico gratuito
+        </a>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card" *ngFor="let step of steps">
+          <div class="step-number">{{ step.number }}</div>
+          <h3 class="step-title">{{ step.title }}</h3>
+          <p class="step-description">{{ step.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PARA EMPRESAS SECTION ===== -->
+<section class="section section-light" id="empresas">
+  <div class="container">
+    <div class="empresas-layout">
+      <div class="empresas-stats">
+        <div class="emp-stat">
+          <span class="emp-number">500+</span>
+          <span class="emp-label">Colaboradores certificados por año</span>
+        </div>
+        <div class="emp-stat">
+          <span class="emp-number">40+</span>
+          <span class="emp-label">Empresas aliadas</span>
+        </div>
+        <div class="emp-stat">
+          <span class="emp-number">12</span>
+          <span class="emp-label">Sectores atendidos</span>
+        </div>
+        <div class="emp-stat">
+          <span class="emp-number">24 hrs</span>
+          <span class="emp-label">Tiempo de respuesta</span>
+        </div>
+      </div>
+
+      <div class="empresas-content">
+        <span class="section-tag">Para Empresas</span>
+        <h2 class="section-title">Fortalece el talento<br>de tu organización</h2>
+        <p class="section-description">
+          Diseñamos programas de certificación corporativa que profesionalizan a tu equipo y elevan la calidad de tus procesos. Trabajamos con áreas de RH, capacitación y operaciones.
+        </p>
+        <ul class="benefit-list">
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Diagnóstico de brechas de competencias por área
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Diseño de rutas de certificación a la medida
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Evaluadores acreditados en sitio o remoto
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Reportes ejecutivos y evidencia de cumplimiento
+          </li>
+        </ul>
+        <button class="btn-dark" (click)="scrollTo('contacto')">
+          Hablar con un consultor
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== NOSOTROS SECTION ===== -->
+<section class="section section-navy" id="nosotros">
+  <div class="container">
+    <div class="nosotros-layout">
+      <div class="nosotros-content">
+        <span class="section-tag-light">Sobre Nosotros</span>
+        <h2 class="section-title-light">Una casa certificadora<br>construida sobre confianza.</h2>
+        <p class="section-description-light">
+          Desde hace más de una década acompañamos a profesionales, docentes, consultores y empresas mexicanas en el reconocimiento formal de sus competencias. Nuestro compromiso es el rigor técnico y el trato humano en cada evaluación.
+        </p>
+      </div>
+      <div class="nosotros-values">
+        <div class="value-card">
+          <div class="value-icon">🎯</div>
+          <h3>Rigor técnico</h3>
+          <p>Aplicamos estándares internacionales con precisión en cada evaluación.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">🤝</div>
+          <h3>Trato humano</h3>
+          <p>Cada candidato recibe acompañamiento personalizado durante todo el proceso.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">🏛️</div>
+          <h3>Validez oficial</h3>
+          <p>Reconocidos por instituciones nacionales en todo México.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIOS SECTION ===== -->
+<section class="section section-white" id="testimonios">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Historias Reales</span>
+      <h2 class="section-title">Lo que dicen quienes ya se certificaron</h2>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card" *ngFor="let t of testimonials">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">{{ t.quote }}</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">{{ t.initials }}</div>
+          <div class="author-info">
+            <span class="author-name">{{ t.name }}</span>
+            <span class="author-role">{{ t.role }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTACTO SECTION ===== -->
+<section class="section section-navy-deep" id="contacto">
+  <div class="container">
+    <div class="contact-inner">
+      <h2 class="contact-title">¿Listo para certificar<br>tu experiencia?</h2>
+      <p class="contact-description">
+        Agenda una llamada de 20 minutos con nuestro equipo. Te ayudamos a elegir el estándar adecuado y a estimar tiempos y costos.
+      </p>
+
+      <div class="contact-actions">
+        <a href="mailto:contacto@conocer.mx" class="btn-contact-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Escribir por correo
+        </a>
+        <a href="tel:+525500000000" class="btn-contact-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M22 16.92V19.92C22.0011 20.4831 21.7571 21.0214 21.3252 21.4001C20.8934 21.7789 20.3182 21.9641 19.76 21.91C16.4428 21.5856 13.2574 20.5341 10.41 18.84C7.76361 17.3 5.55066 15.087 4.01001 12.44C2.30997 9.57955 1.25828 6.37525 0.940012 3.04C0.886248 2.4838 1.07004 1.91036 1.44696 1.47897C1.82388 1.04758 2.35921 0.802609 2.92001 0.800003H5.92001C6.90659 0.790283 7.74795 1.48687 7.92001 2.46C8.11736 3.42 8.42695 4.35485 8.84001 5.24C9.09853 5.83028 8.94951 6.51302 8.48001 6.94L7.22001 8.2C8.6318 10.9285 10.872 13.1686 13.6 14.58L14.86 13.32C15.2901 12.8505 15.9728 12.7015 16.563 12.96C17.4521 13.373 18.387 13.6826 19.347 13.88C20.335 14.054 21.039 14.9088 21.013 15.904L22 16.92Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Llamar ahora
+        </a>
+      </div>
+
+      <div class="contact-info">
+        <div class="contact-info-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+            <circle cx="12" cy="10" r="3" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+          </svg>
+          <span>Av. Reforma 123, Piso 8 · Ciudad de México</span>
+        </div>
+        <div class="contact-info-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M22 16.92V19.92C22.0011 20.4831 21.7571 21.0214 21.3252 21.4001C20.8934 21.7789 20.3182 21.9641 19.76 21.91C16.4428 21.5856 13.2574 20.5341 10.41 18.84C7.76361 17.3 5.55066 15.087 4.01001 12.44C2.30997 9.57955 1.25828 6.37525 0.940012 3.04C0.886248 2.4838 1.07004 1.91036 1.44696 1.47897C1.82388 1.04758 2.35921 0.802609 2.92001 0.800003H5.92001C6.90659 0.790283 7.74795 1.48687 7.92001 2.46C8.11736 3.42 8.42695 4.35485 8.84001 5.24C9.09853 5.83028 8.94951 6.51302 8.48001 6.94L7.22001 8.2C8.6318 10.9285 10.872 13.1686 13.6 14.58L14.86 13.32C15.2901 12.8505 15.9728 12.7015 16.563 12.96C17.4521 13.373 18.387 13.6826 19.347 13.88C20.335 14.054 21.039 14.9088 21.013 15.904L22 16.92Z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+          </svg>
+          <span>+52 (55) 0000 0000</span>
+        </div>
+        <div class="contact-info-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>contacto&#64;conocer.mx</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+              <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="14" cy="14" r="2.5" fill="white"/>
+            </svg>
+          </div>
+          <span class="footer-logo-text">CONOCER</span>
+        </div>
+        <p class="footer-tagline">
+          Casa certificadora acreditada para el reconocimiento formal de competencias laborales en México.
+        </p>
+      </div>
+
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Enlaces</h4>
+          <ul>
+            <li><a (click)="scrollTo('certificaciones')">Certificaciones</a></li>
+            <li><a (click)="scrollTo('proceso')">Proceso</a></li>
+            <li><a (click)="scrollTo('empresas')">Para empresas</a></li>
+            <li><a (click)="scrollTo('contacto')">Contacto</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Aviso de privacidad</a></li>
+            <li><a href="#">Términos de servicio</a></li>
+            <li><a href="#">Código de ética</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 CONOCER. Todos los derechos reservados.</p>
+      <p class="footer-made">Hecho con rigor en México 🇲🇽</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,451 @@
+<!-- Ficha de Registro — Página completa -->
+<div class="fr-page">
+
+  <!-- Toast / Notificación -->
+  @if (toast()) {
+    <div class="fr-toast" [class.success]="toastType() === 'success'" [class.error]="toastType() === 'error'">
+      {{ toast() }}
+    </div>
+  }
+
+  <!-- ── Header de la página ─────────────────────────────────────── -->
+  <div class="fr-hero">
+    <div class="fr-hero-left">
+      <div class="fr-hero-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="fr-hero-title">Ficha de Registro</h1>
+        <p class="fr-hero-sub">Completa tu información para el proceso de certificación CONOCER</p>
+      </div>
+    </div>
+    <div class="fr-hero-user">
+      <div class="fr-avatar">{{ (user?.full_name?.charAt(0) ?? '?').toUpperCase() }}</div>
+      <div>
+        <div class="fr-user-name">{{ user?.full_name }}</div>
+        <div class="fr-user-email">{{ user?.email }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Aviso sin inscripción ──────────────────────────────────── -->
+  @if (!loadingEnroll() && !enrollmentId()) {
+    <div class="fr-notice warning">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span>No tienes una inscripción activa. Solicita tu inscripción a un curso antes de enviar este formulario.</span>
+    </div>
+  }
+
+  @if (loadingEnroll()) {
+    <div class="fr-notice info">
+      <span class="fr-spinner-sm"></span>
+      <span>Verificando inscripción…</span>
+    </div>
+  }
+
+  <!-- ── Pantalla de éxito ──────────────────────────────────────── -->
+  @if (submitted()) {
+    <div class="fr-success-screen">
+      <div class="fr-success-icon">🎉</div>
+      <h2>¡Ficha enviada exitosamente!</h2>
+      <p>El equipo de coordinación revisará tu información. Te notificarán cuando esté validada.</p>
+    </div>
+  }
+
+  @if (!submitted()) {
+    <form [formGroup]="form" class="fr-form" novalidate (ngSubmit)="onSubmit()">
+
+      <!-- ────────────────── SECCIÓN: ESTÁNDAR ────────────────── -->
+      <div class="fr-section" [class.open]="sections().estandar">
+        <button type="button" class="fr-section-header" (click)="toggleSection('estandar')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">📋</span>
+            <span class="fr-section-title">Estándar de Competencia</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().estandar" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().estandar) {
+          <div class="fr-section-body">
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('estandarCompetencia')">
+                <label class="fr-label">Nombre del Estándar <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="estandarCompetencia"
+                       placeholder="Ej. Atención al usuario basada en la cultura del buen trato">
+                @if (invalid('estandarCompetencia')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('estandarCodigo')">
+                <label class="fr-label">Código <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="estandarCodigo" placeholder="Ej. EC1268">
+                @if (invalid('estandarCodigo')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-field fr-field-half" [class.has-error]="invalid('fechaRegistro')">
+              <label class="fr-label">Fecha de Registro <span class="req">*</span></label>
+              <input class="fr-input" type="date" formControlName="fechaRegistro">
+              @if (invalid('fechaRegistro')) { <span class="fr-error">Campo obligatorio</span> }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: DATOS PERSONALES ─────────── -->
+      <div class="fr-section" [class.open]="sections().personales">
+        <button type="button" class="fr-section-header" (click)="toggleSection('personales')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">👤</span>
+            <span class="fr-section-title">Datos Personales</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().personales" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().personales) {
+          <div class="fr-section-body">
+            <div class="fr-field" [class.has-error]="invalid('nombreCompleto')">
+              <label class="fr-label">Nombre Completo <span class="req">*</span></label>
+              <input class="fr-input" type="text" formControlName="nombreCompleto" placeholder="Nombre(s) y apellidos">
+              @if (invalid('nombreCompleto')) { <span class="fr-error">Campo obligatorio</span> }
+            </div>
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('lugarNacimiento')">
+                <label class="fr-label">Lugar de Nacimiento <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="lugarNacimiento" placeholder="Ciudad, Estado">
+                @if (invalid('lugarNacimiento')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('nacionalidad')">
+                <label class="fr-label">Nacionalidad <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="nacionalidad">
+                @if (invalid('nacionalidad')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('curp')">
+                <label class="fr-label">CURP <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="curp"
+                       placeholder="XXXX000000XXXXXX00" style="text-transform:uppercase">
+                @if (invalid('curp')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('fechaNacimiento')">
+                <label class="fr-label">Fecha de Nacimiento <span class="req">*</span></label>
+                <input class="fr-input" type="date" formControlName="fechaNacimiento">
+                @if (invalid('fechaNacimiento')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-field" [class.has-error]="invalid('genero')">
+              <label class="fr-label">Género <span class="req">*</span></label>
+              <div class="fr-radio-group">
+                <label class="fr-radio-opt">
+                  <input type="radio" formControlName="genero" value="Hombre"> Hombre
+                </label>
+                <label class="fr-radio-opt">
+                  <input type="radio" formControlName="genero" value="Mujer"> Mujer
+                </label>
+              </div>
+              @if (invalid('genero')) { <span class="fr-error">Selecciona una opción</span> }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: DOMICILIO ─────────────────── -->
+      <div class="fr-section" [class.open]="sections().domicilio">
+        <button type="button" class="fr-section-header" (click)="toggleSection('domicilio')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">🏠</span>
+            <span class="fr-section-title">Domicilio</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().domicilio" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().domicilio) {
+          <div class="fr-section-body">
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('calle')">
+                <label class="fr-label">Calle <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="calle">
+                @if (invalid('calle')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('numero')">
+                <label class="fr-label">Número <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="numero" placeholder="Ext. / Int.">
+                @if (invalid('numero')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-grid three">
+              <div class="fr-field" [class.has-error]="invalid('cp')">
+                <label class="fr-label">C.P. <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="cp" placeholder="00000" maxlength="5">
+                @if (invalid('cp')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('colonia')">
+                <label class="fr-label">Colonia <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="colonia">
+                @if (invalid('colonia')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('ciudad')">
+                <label class="fr-label">Ciudad / Municipio <span class="req">*</span></label>
+                <input class="fr-input" type="text" formControlName="ciudad">
+                @if (invalid('ciudad')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-field fr-field-half" [class.has-error]="invalid('entidadFederativa')">
+              <label class="fr-label">Entidad Federativa <span class="req">*</span></label>
+              <input class="fr-input" type="text" formControlName="entidadFederativa" placeholder="Estado">
+              @if (invalid('entidadFederativa')) { <span class="fr-error">Campo obligatorio</span> }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: CONTACTO ─────────────────── -->
+      <div class="fr-section" [class.open]="sections().contacto">
+        <button type="button" class="fr-section-header" (click)="toggleSection('contacto')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">📞</span>
+            <span class="fr-section-title">Contacto</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().contacto" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().contacto) {
+          <div class="fr-section-body">
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('email')">
+                <label class="fr-label">Correo Electrónico <span class="req">*</span></label>
+                <input class="fr-input" type="email" formControlName="email">
+                @if (invalid('email')) { <span class="fr-error">Correo inválido</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('telefono')">
+                <label class="fr-label">Teléfono <span class="req">*</span></label>
+                <input class="fr-input" type="tel" formControlName="telefono" placeholder="10 dígitos">
+                @if (invalid('telefono')) { <span class="fr-error">Campo obligatorio</span> }
+              </div>
+            </div>
+            <div class="fr-field fr-field-half">
+              <label class="fr-label">Teléfono Celular <span class="fr-opt">(opcional)</span></label>
+              <input class="fr-input" type="tel" formControlName="telefonoCelular" placeholder="10 dígitos">
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: RENAP ────────────────────── -->
+      <div class="fr-section" [class.open]="sections().renap">
+        <button type="button" class="fr-section-header" (click)="toggleSection('renap')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">🔐</span>
+            <span class="fr-section-title">Registro Nacional de Personas (RENAP)</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().renap" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().renap) {
+          <div class="fr-section-body">
+            <div class="fr-field" [class.has-error]="invalid('consentimientoRenap')">
+              <label class="fr-label">
+                ¿Autoriza al CONOCER para difundir sus datos en el RENAP? <span class="req">*</span>
+              </label>
+              <div class="fr-radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="fr-radio-opt">
+                    <input type="radio" formControlName="consentimientoRenap" [value]="opt.value">
+                    {{ opt.label }}
+                  </label>
+                }
+              </div>
+              @if (invalid('consentimientoRenap')) { <span class="fr-error">Selecciona una opción</span> }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: INFORMACIÓN COMPLEMENTARIA ── -->
+      <div class="fr-section" [class.open]="sections().complementaria">
+        <button type="button" class="fr-section-header" (click)="toggleSection('complementaria')">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">📊</span>
+            <span class="fr-section-title">Información Complementaria</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().complementaria" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().complementaria) {
+          <div class="fr-section-body">
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('sabeLeerEscribir')">
+                <label class="fr-label">¿Sabe leer y escribir? <span class="req">*</span></label>
+                <div class="fr-radio-group">
+                  @for (opt of siNoOpts; track opt.value) {
+                    <label class="fr-radio-opt">
+                      <input type="radio" formControlName="sabeLeerEscribir" [value]="opt.value"> {{ opt.label }}
+                    </label>
+                  }
+                </div>
+                @if (invalid('sabeLeerEscribir')) { <span class="fr-error">Selecciona una opción</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('cuentaEstudios')">
+                <label class="fr-label">¿Cuenta con estudios? <span class="req">*</span></label>
+                <div class="fr-radio-group">
+                  @for (opt of siNoOpts; track opt.value) {
+                    <label class="fr-radio-opt">
+                      <input type="radio" formControlName="cuentaEstudios" [value]="opt.value"> {{ opt.label }}
+                    </label>
+                  }
+                </div>
+                @if (invalid('cuentaEstudios')) { <span class="fr-error">Selecciona una opción</span> }
+              </div>
+            </div>
+
+            @if (f('cuentaEstudios')?.value === 'Sí') {
+              <div class="fr-field">
+                <label class="fr-label">¿Cuáles estudios?</label>
+                <input class="fr-input" type="text" formControlName="cualesEstudios" placeholder="Nivel / Institución">
+              </div>
+            }
+
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('trabajaActualmente')">
+                <label class="fr-label">¿Trabaja actualmente? <span class="req">*</span></label>
+                <div class="fr-radio-group">
+                  @for (opt of siNoOpts; track opt.value) {
+                    <label class="fr-radio-opt">
+                      <input type="radio" formControlName="trabajaActualmente" [value]="opt.value"> {{ opt.label }}
+                    </label>
+                  }
+                </div>
+                @if (invalid('trabajaActualmente')) { <span class="fr-error">Selecciona una opción</span> }
+              </div>
+              <div class="fr-field" [class.has-error]="invalid('tieneDiscapacidad')">
+                <label class="fr-label">¿Tiene alguna discapacidad? <span class="req">*</span></label>
+                <div class="fr-radio-group">
+                  @for (opt of siNoOpts; track opt.value) {
+                    <label class="fr-radio-opt">
+                      <input type="radio" formControlName="tieneDiscapacidad" [value]="opt.value"> {{ opt.label }}
+                    </label>
+                  }
+                </div>
+                @if (invalid('tieneDiscapacidad')) { <span class="fr-error">Selecciona una opción</span> }
+              </div>
+            </div>
+
+            @if (f('tieneDiscapacidad')?.value === 'Sí') {
+              <div class="fr-field">
+                <label class="fr-label">Tipo de discapacidad</label>
+                <div class="fr-check-group">
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadMotriz"> Motriz</label>
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadVisual"> Visual</label>
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadAuditiva"> Auditiva</label>
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadLenguaje"> Lenguaje</label>
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadIntelectual"> Intelectual</label>
+                  <label class="fr-check-opt"><input type="checkbox" formControlName="discapacidadOtras"> Otras</label>
+                </div>
+              </div>
+            }
+
+            @if (f('trabajaActualmente')?.value === 'Sí') {
+              <div class="fr-field">
+                <label class="fr-label">Puesto de trabajo</label>
+                <input class="fr-input" type="text" formControlName="puestoTrabajo" placeholder="Cargo actual">
+              </div>
+            }
+
+            <div class="fr-field">
+              <label class="fr-label">Idioma(s) o lengua(s) que habla</label>
+              <input class="fr-input" type="text" formControlName="idiomas" placeholder="Ej. Español, Inglés">
+            </div>
+
+            <div class="fr-field">
+              <label class="fr-label">Experiencia laboral</label>
+              <textarea class="fr-input" formControlName="experienciaLaboral" rows="3"
+                        placeholder="Describa brevemente su experiencia relevante"></textarea>
+            </div>
+
+            <div class="fr-grid two">
+              <div class="fr-field" [class.has-error]="invalid('cuentaCertificacion')">
+                <label class="fr-label">¿Cuenta con certificaciones? <span class="req">*</span></label>
+                <div class="fr-radio-group">
+                  @for (opt of siNoOpts; track opt.value) {
+                    <label class="fr-radio-opt">
+                      <input type="radio" formControlName="cuentaCertificacion" [value]="opt.value"> {{ opt.label }}
+                    </label>
+                  }
+                </div>
+                @if (invalid('cuentaCertificacion')) { <span class="fr-error">Selecciona una opción</span> }
+              </div>
+              @if (f('cuentaCertificacion')?.value === 'Sí') {
+                <div class="fr-field">
+                  <label class="fr-label">¿Cuáles certificaciones?</label>
+                  <input class="fr-input" type="text" formControlName="cualesCertificaciones">
+                </div>
+              }
+            </div>
+
+            <div class="fr-field">
+              <label class="fr-label">Observaciones</label>
+              <textarea class="fr-input" formControlName="observaciones" rows="2"
+                        placeholder="Información adicional relevante (opcional)"></textarea>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ────────────────── SECCIÓN: FIRMA DIGITAL ─────────────── -->
+      <div class="fr-section" [class.open]="sections().firma">
+        <button type="button" class="fr-section-header" (click)="openFirmaSection()">
+          <div class="fr-section-left">
+            <span class="fr-section-icon">✍️</span>
+            <span class="fr-section-title">Nombre y Firma del Candidato</span>
+          </div>
+          <svg class="fr-chevron" [class.rotated]="sections().firma" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        @if (sections().firma) {
+          <div class="fr-section-body">
+            <div class="fr-sig-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Dibuja tu firma con el mouse o con el dedo en el área de abajo
+            </div>
+            <div class="fr-sig-wrap">
+              <canvas #sigCanvas class="fr-sig-canvas" (mousedown)="initCanvas()" (touchstart)="initCanvas()"></canvas>
+              <div class="fr-sig-actions">
+                @if (firmaBase64()) {
+                  <span class="fr-sig-ok">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Firma capturada
+                  </span>
+                }
+                <button type="button" class="fr-sig-clear" (click)="clearSignature()">
+                  Limpiar firma
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ── Botón de envío ────────────────────────────────────── -->
+      <div class="fr-submit-row">
+        <div class="fr-submit-info">
+          <span class="req">*</span> Campos obligatorios
+        </div>
+        <button type="submit" class="fr-submit-btn" [disabled]="loading() || loadingEnroll()">
+          @if (loading()) {
+            <span class="fr-spinner"></span>
+            Enviando…
+          } @else {
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Enviar Ficha de Registro
+          }
+        </button>
+      </div>
+
+    </form>
+  }
+
+</div>

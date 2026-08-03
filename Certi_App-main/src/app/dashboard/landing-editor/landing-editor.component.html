@@ -1,0 +1,365 @@
+<div class="le-wrap">
+
+  @if (toast()) {
+    <div class="le-toast">{{ toast() }}</div>
+  }
+
+  <div class="le-header">
+    <div>
+      <h2 class="le-title">🖥️ Editor del Landing Page</h2>
+      <p class="le-subtitle">Edita el contenido público de tu sitio sin tocar código. Los cambios se aplican al guardar.</p>
+    </div>
+    <div class="le-header-actions">
+      <a routerLink="/" target="_blank" class="le-btn-secondary">Ver landing page ↗</a>
+      <button class="le-btn-secondary" (click)="resetToDefaults()">Restablecer</button>
+      <button class="le-btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="le-loading">Cargando contenido actual…</div>
+  } @else {
+
+    <!-- ══════════════ HERO ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">🏠 Sección principal (Hero)</h3>
+
+      <div class="le-field">
+        <label>Texto del badge superior</label>
+        <input type="text" [value]="content().hero.badgeText" (input)="setHero('badgeText', inputValue($event))">
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Título — línea 1</label>
+          <input type="text" [value]="content().hero.titleLine1" (input)="setHero('titleLine1', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título — palabra destacada</label>
+          <input type="text" [value]="content().hero.titleAccent" (input)="setHero('titleAccent', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título — línea 3</label>
+          <input type="text" [value]="content().hero.titleLine3" (input)="setHero('titleLine3', inputValue($event))">
+        </div>
+      </div>
+      <div class="le-field">
+        <label>Descripción</label>
+        <textarea rows="3" [value]="content().hero.description" (input)="setHero('description', inputValue($event))"></textarea>
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Texto botón principal</label>
+          <input type="text" [value]="content().hero.ctaPrimaryText" (input)="setHero('ctaPrimaryText', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Texto botón secundario</label>
+          <input type="text" [value]="content().hero.ctaSecondaryText" (input)="setHero('ctaSecondaryText', inputValue($event))">
+        </div>
+      </div>
+
+      <h4 class="le-subsection-title">Estadísticas (3 recomendadas)</h4>
+      @for (stat of content().hero.stats; track $index) {
+        <div class="le-array-item">
+          <input type="text" placeholder="Número (ej: +15)" [value]="stat.number" (input)="setHeroStat($index, 'number', inputValue($event))">
+          <input type="text" placeholder="Descripción" [value]="stat.label" (input)="setHeroStat($index, 'label', inputValue($event))">
+          <button class="le-remove-btn" (click)="removeHeroStat($index)">✕</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addHeroStat()">+ Agregar estadística</button>
+
+      <div class="le-row" style="margin-top:1rem">
+        <div class="le-field">
+          <label>Título del sello de confianza</label>
+          <input type="text" [value]="content().hero.trustTitle" (input)="setHero('trustTitle', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Subtítulo del sello</label>
+          <input type="text" [value]="content().hero.trustSub" (input)="setHero('trustSub', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Etiqueta "Respaldados por"</label>
+          <input type="text" [value]="content().hero.trustLabel" (input)="setHero('trustLabel', inputValue($event))">
+        </div>
+      </div>
+
+      <h4 class="le-subsection-title">Instituciones que respaldan (siglas)</h4>
+      @for (inst of content().hero.institutions; track $index) {
+        <div class="le-array-item">
+          <input type="text" placeholder="Ej: SEP" [value]="inst" (input)="setInstitution($index, inputValue($event))">
+          <button class="le-remove-btn" (click)="removeInstitution($index)">✕</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addInstitution()">+ Agregar institución</button>
+    </div>
+
+    <!-- ══════════════ CERTIFICACIONES ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">🎓 Certificaciones</h3>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Etiqueta</label>
+          <input type="text" [value]="content().certificaciones.tag" (input)="setCertSection('tag', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título de sección</label>
+          <input type="text" [value]="content().certificaciones.title" (input)="setCertSection('title', inputValue($event))">
+        </div>
+      </div>
+      <div class="le-field">
+        <label>Descripción</label>
+        <input type="text" [value]="content().certificaciones.description" (input)="setCertSection('description', inputValue($event))">
+      </div>
+
+      <h4 class="le-subsection-title">Tarjetas de certificación</h4>
+      @for (item of content().certificaciones.items; track $index) {
+        <div class="le-card-item">
+          <div class="le-row">
+            <div class="le-field sm">
+              <label>Ícono (emoji)</label>
+              <input type="text" [value]="item.icon" (input)="setCertItem($index, 'icon', inputValue($event))">
+            </div>
+            <div class="le-field">
+              <label>Título</label>
+              <input type="text" [value]="item.title" (input)="setCertItem($index, 'title', inputValue($event))">
+            </div>
+            <div class="le-field sm">
+              <label>Color</label>
+              <input type="color" [value]="item.color" (input)="setCertItem($index, 'color', inputValue($event))">
+            </div>
+          </div>
+          <div class="le-field">
+            <label>Descripción</label>
+            <input type="text" [value]="item.description" (input)="setCertItem($index, 'description', inputValue($event))">
+          </div>
+          <div class="le-field">
+            <label>Códigos (separados por coma)</label>
+            <input type="text" placeholder="EC0217, EC0301" [value]="item.codes" (input)="setCertItem($index, 'codes', inputValue($event))">
+          </div>
+          <button class="le-remove-btn block" (click)="removeCertItem($index)">✕ Quitar esta tarjeta</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addCertItem()">+ Agregar tarjeta de certificación</button>
+    </div>
+
+    <!-- ══════════════ PROCESO ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">🧭 Proceso</h3>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Etiqueta</label>
+          <input type="text" [value]="content().proceso.tag" (input)="setProcesoSection('tag', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título</label>
+          <input type="text" [value]="content().proceso.title" (input)="setProcesoSection('title', inputValue($event))">
+        </div>
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Descripción</label>
+          <input type="text" [value]="content().proceso.description" (input)="setProcesoSection('description', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Texto del botón</label>
+          <input type="text" [value]="content().proceso.ctaText" (input)="setProcesoSection('ctaText', inputValue($event))">
+        </div>
+      </div>
+
+      <h4 class="le-subsection-title">Pasos</h4>
+      @for (step of content().proceso.steps; track $index) {
+        <div class="le-card-item">
+          <div class="le-field">
+            <label>Paso {{ $index + 1 }} — Título</label>
+            <input type="text" [value]="step.title" (input)="setStep($index, 'title', inputValue($event))">
+          </div>
+          <div class="le-field">
+            <label>Descripción</label>
+            <input type="text" [value]="step.description" (input)="setStep($index, 'description', inputValue($event))">
+          </div>
+          <button class="le-remove-btn block" (click)="removeStep($index)">✕ Quitar este paso</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addStep()">+ Agregar paso</button>
+    </div>
+
+    <!-- ══════════════ EMPRESAS ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">💼 Para empresas</h3>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Etiqueta</label>
+          <input type="text" [value]="content().empresas.tag" (input)="setEmpresasSection('tag', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título</label>
+          <input type="text" [value]="content().empresas.title" (input)="setEmpresasSection('title', inputValue($event))">
+        </div>
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Descripción</label>
+          <input type="text" [value]="content().empresas.description" (input)="setEmpresasSection('description', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Texto del botón</label>
+          <input type="text" [value]="content().empresas.ctaText" (input)="setEmpresasSection('ctaText', inputValue($event))">
+        </div>
+      </div>
+
+      <h4 class="le-subsection-title">Estadísticas para empresas</h4>
+      @for (stat of content().empresas.stats; track $index) {
+        <div class="le-array-item">
+          <input type="text" placeholder="Número" [value]="stat.number" (input)="setEmpresaStat($index, 'number', inputValue($event))">
+          <input type="text" placeholder="Descripción" [value]="stat.label" (input)="setEmpresaStat($index, 'label', inputValue($event))">
+          <button class="le-remove-btn" (click)="removeEmpresaStat($index)">✕</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addEmpresaStat()">+ Agregar estadística</button>
+
+      <h4 class="le-subsection-title">Beneficios (lista con check)</h4>
+      @for (b of content().empresas.benefits; track $index) {
+        <div class="le-array-item">
+          <input type="text" [value]="b" (input)="setBenefit($index, inputValue($event))">
+          <button class="le-remove-btn" (click)="removeBenefit($index)">✕</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addBenefit()">+ Agregar beneficio</button>
+    </div>
+
+    <!-- ══════════════ NOSOTROS ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">🏛️ Sobre nosotros</h3>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Etiqueta</label>
+          <input type="text" [value]="content().nosotros.tag" (input)="setNosotrosSection('tag', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título</label>
+          <input type="text" [value]="content().nosotros.title" (input)="setNosotrosSection('title', inputValue($event))">
+        </div>
+      </div>
+      <div class="le-field">
+        <label>Descripción</label>
+        <input type="text" [value]="content().nosotros.description" (input)="setNosotrosSection('description', inputValue($event))">
+      </div>
+
+      <h4 class="le-subsection-title">Valores</h4>
+      @for (v of content().nosotros.values; track $index) {
+        <div class="le-card-item">
+          <div class="le-row">
+            <div class="le-field sm">
+              <label>Ícono</label>
+              <input type="text" [value]="v.icon" (input)="setValue($index, 'icon', inputValue($event))">
+            </div>
+            <div class="le-field">
+              <label>Título</label>
+              <input type="text" [value]="v.title" (input)="setValue($index, 'title', inputValue($event))">
+            </div>
+          </div>
+          <div class="le-field">
+            <label>Descripción</label>
+            <input type="text" [value]="v.description" (input)="setValue($index, 'description', inputValue($event))">
+          </div>
+          <button class="le-remove-btn block" (click)="removeValue($index)">✕ Quitar este valor</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addValue()">+ Agregar valor</button>
+    </div>
+
+    <!-- ══════════════ TESTIMONIOS ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">💬 Testimonios</h3>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Etiqueta</label>
+          <input type="text" [value]="content().testimonios.tag" (input)="setTestimoniosSection('tag', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Título</label>
+          <input type="text" [value]="content().testimonios.title" (input)="setTestimoniosSection('title', inputValue($event))">
+        </div>
+      </div>
+
+      @for (t of content().testimonios.items; track $index) {
+        <div class="le-card-item">
+          <div class="le-field">
+            <label>Cita / testimonio</label>
+            <textarea rows="2" [value]="t.quote" (input)="setTestimonial($index, 'quote', inputValue($event))"></textarea>
+          </div>
+          <div class="le-row">
+            <div class="le-field">
+              <label>Nombre</label>
+              <input type="text" [value]="t.name" (input)="setTestimonial($index, 'name', inputValue($event))">
+            </div>
+            <div class="le-field">
+              <label>Rol / cargo</label>
+              <input type="text" [value]="t.role" (input)="setTestimonial($index, 'role', inputValue($event))">
+            </div>
+            <div class="le-field sm">
+              <label>Iniciales</label>
+              <input type="text" maxlength="2" [value]="t.initials" (input)="setTestimonial($index, 'initials', inputValue($event))">
+            </div>
+          </div>
+          <button class="le-remove-btn block" (click)="removeTestimonial($index)">✕ Quitar testimonio</button>
+        </div>
+      }
+      <button class="le-add-btn" (click)="addTestimonial()">+ Agregar testimonio</button>
+    </div>
+
+    <!-- ══════════════ CONTACTO ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">📞 Contacto</h3>
+      <div class="le-field">
+        <label>Título</label>
+        <input type="text" [value]="content().contacto.title" (input)="setContacto('title', inputValue($event))">
+      </div>
+      <div class="le-field">
+        <label>Descripción</label>
+        <input type="text" [value]="content().contacto.description" (input)="setContacto('description', inputValue($event))">
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Correo</label>
+          <input type="email" [value]="content().contacto.email" (input)="setContacto('email', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Teléfono</label>
+          <input type="text" [value]="content().contacto.phone" (input)="setContacto('phone', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Dirección</label>
+          <input type="text" [value]="content().contacto.address" (input)="setContacto('address', inputValue($event))">
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ FOOTER ══════════════ -->
+    <div class="le-section">
+      <h3 class="le-section-title">🔻 Pie de página</h3>
+      <div class="le-field">
+        <label>Descripción breve (tagline)</label>
+        <input type="text" [value]="content().footer.tagline" (input)="setFooter('tagline', inputValue($event))">
+      </div>
+      <div class="le-row">
+        <div class="le-field">
+          <label>Texto de derechos reservados</label>
+          <input type="text" [value]="content().footer.copyright" (input)="setFooter('copyright', inputValue($event))">
+        </div>
+        <div class="le-field">
+          <label>Texto final ("Hecho con…")</label>
+          <input type="text" [value]="content().footer.madeText" (input)="setFooter('madeText', inputValue($event))">
+        </div>
+      </div>
+    </div>
+
+    <div class="le-footer-actions">
+      <button class="le-btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  }
+
+</div>

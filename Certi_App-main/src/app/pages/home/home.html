@@ -1,0 +1,309 @@
+<!-- ===== NAVIGATION ===== -->
+<nav class="navbar" [class.scrolled]="isScrolled">
+  <div class="nav-container">
+    <a class="nav-logo" (click)="scrollTo('hero')">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+          <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-main">CONOCER</span>
+        <span class="logo-sub">Casa Certificadora</span>
+      </div>
+    </a>
+
+    <div class="nav-links" [class.open]="mobileMenuOpen">
+      <a (click)="scrollTo('certificaciones')" class="nav-link">Certificaciones</a>
+      <a (click)="scrollTo('proceso')" class="nav-link">Proceso</a>
+      <a (click)="scrollTo('empresas')" class="nav-link">Para empresas</a>
+      <a (click)="scrollTo('nosotros')" class="nav-link">Nosotros</a>
+      <a (click)="scrollTo('contacto')" class="nav-link">Contacto</a>
+
+      <div class="nav-auth-group" *ngIf="!auth.isAuthenticated()">
+        <button class="btn-nav-login" (click)="goToLogin()">Iniciar sesión</button>
+        <button class="btn-nav-cta" (click)="goToRegister()">Registrarse</button>
+      </div>
+
+      <div class="nav-user-group" *ngIf="auth.isAuthenticated()">
+        <div class="nav-user-badge">
+          <div class="user-avatar-sm">{{ auth.currentUser()?.full_name?.charAt(0) }}</div>
+          <span class="user-name-sm">{{ (auth.currentUser()?.full_name?.split(' ') ?? [])[0] }}</span>
+          <span class="role-chip" [class]="auth.currentUser()?.role ?? ''">{{ auth.currentUser()?.role }}</span>
+        </div>
+        <button class="btn-nav-dashboard" (click)="goToDashboard()">Mi panel</button>
+        <button class="btn-nav-logout" (click)="logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <button class="hamburger" (click)="toggleMobileMenu()" [class.active]="mobileMenuOpen" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ===== HERO SECTION ===== -->
+<section class="hero" id="hero">
+  <div class="hero-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <div class="hero-container">
+    <div class="hero-badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>{{ content.hero.badgeText }}</span>
+    </div>
+    <h1 class="hero-title">
+      {{ content.hero.titleLine1 }}<br>
+      <span class="hero-title-accent">{{ content.hero.titleAccent }}</span><br>
+      {{ content.hero.titleLine3 }}
+    </h1>
+    <p class="hero-description">
+      {{ content.hero.description }}
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" (click)="goToRegister()">
+        {{ content.hero.ctaPrimaryText }}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="btn-secondary" (click)="scrollTo('proceso')">{{ content.hero.ctaSecondaryText }}</button>
+    </div>
+    <div class="hero-stats">
+      <ng-container *ngFor="let stat of content.hero.stats; let last = last">
+        <div class="stat-item"><span class="stat-number">{{ stat.number }}</span><span class="stat-label">{{ stat.label }}</span></div>
+        <div class="stat-divider" *ngIf="!last"></div>
+      </ng-container>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" stroke="#2dd4bf" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 12L11 14L15 10" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <span class="trust-title">{{ content.hero.trustTitle }}</span>
+          <span class="trust-sub">{{ content.hero.trustSub }}</span>
+        </div>
+      </div>
+      <div class="trust-institutions">
+        <span class="trust-label">{{ content.hero.trustLabel }}</span>
+        <div class="institutions-list">
+          <span class="institution-tag" *ngFor="let inst of content.hero.institutions">{{ inst }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CERTIFICACIONES ===== -->
+<section class="section section-light" id="certificaciones">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">{{ content.certificaciones.tag }}</span>
+      <h2 class="section-title">{{ content.certificaciones.title }}</h2>
+      <p class="section-description">{{ content.certificaciones.description }}</p>
+    </div>
+    <div class="certs-grid">
+      <div class="cert-card" *ngFor="let cert of content.certificaciones.items">
+        <div class="cert-icon-wrap" [style.background]="cert.color + '18'">
+          <span class="cert-icon">{{ cert.icon }}</span>
+        </div>
+        <h3 class="cert-title">{{ cert.title }}</h3>
+        <p class="cert-description">{{ cert.description }}</p>
+        <div class="cert-codes">
+          <span class="cert-code" *ngFor="let code of cert.codes.split(',')">{{ code.trim() }}</span>
+        </div>
+        <a (click)="scrollTo('contacto')" class="cert-link">
+          Solicitar información
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROCESO ===== -->
+<section class="section section-white" id="proceso">
+  <div class="container">
+    <div class="proceso-layout">
+      <div class="proceso-left">
+        <span class="section-tag">{{ content.proceso.tag }}</span>
+        <h2 class="section-title">{{ content.proceso.title }}</h2>
+        <p class="section-description">{{ content.proceso.description }}</p>
+        <button class="proceso-link" (click)="goToRegister()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          {{ content.proceso.ctaText }}
+        </button>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card" *ngFor="let step of content.proceso.steps; let i = index">
+          <div class="step-number">{{ stepNumber(i) }}</div>
+          <h3 class="step-title">{{ step.title }}</h3>
+          <p class="step-description">{{ step.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PARA EMPRESAS ===== -->
+<section class="section section-light" id="empresas">
+  <div class="container">
+    <div class="empresas-layout">
+      <div class="empresas-stats">
+        <div class="emp-stat" *ngFor="let stat of content.empresas.stats">
+          <span class="emp-number">{{ stat.number }}</span><span class="emp-label">{{ stat.label }}</span>
+        </div>
+      </div>
+      <div class="empresas-content">
+        <span class="section-tag">{{ content.empresas.tag }}</span>
+        <h2 class="section-title">{{ content.empresas.title }}</h2>
+        <p class="section-description">{{ content.empresas.description }}</p>
+        <ul class="benefit-list">
+          <li *ngFor="let benefit of content.empresas.benefits">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {{ benefit }}
+          </li>
+        </ul>
+        <button class="btn-dark" (click)="scrollTo('contacto')">
+          {{ content.empresas.ctaText }}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== NOSOTROS ===== -->
+<section class="section section-navy" id="nosotros">
+  <div class="container">
+    <div class="nosotros-layout">
+      <div class="nosotros-content">
+        <span class="section-tag-light">{{ content.nosotros.tag }}</span>
+        <h2 class="section-title-light">{{ content.nosotros.title }}</h2>
+        <p class="section-description-light">{{ content.nosotros.description }}</p>
+      </div>
+      <div class="nosotros-values">
+        <div class="value-card" *ngFor="let v of content.nosotros.values">
+          <div class="value-icon">{{ v.icon }}</div>
+          <div><h3>{{ v.title }}</h3><p>{{ v.description }}</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIOS ===== -->
+<section class="section section-white">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">{{ content.testimonios.tag }}</span>
+      <h2 class="section-title">{{ content.testimonios.title }}</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card" *ngFor="let t of content.testimonios.items">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">{{ t.quote }}</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">{{ t.initials }}</div>
+          <div class="author-info">
+            <span class="author-name">{{ t.name }}</span>
+            <span class="author-role">{{ t.role }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTACTO ===== -->
+<section class="section section-navy-deep" id="contacto">
+  <div class="container">
+    <div class="contact-inner">
+      <h2 class="contact-title">{{ content.contacto.title }}</h2>
+      <p class="contact-description">{{ content.contacto.description }}</p>
+      <div class="contact-actions">
+        <button class="btn-contact-primary" (click)="goToRegister()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Crear mi cuenta
+        </button>
+        <a [href]="'mailto:' + content.contacto.email" class="btn-contact-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ content.contacto.email }}
+        </a>
+      </div>
+      <div class="contact-info">
+        <div class="contact-info-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><circle cx="12" cy="10" r="3" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>
+          <span>{{ content.contacto.address }}</span>
+        </div>
+        <div class="contact-info-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 16.92V19.92C22 20.4831 21.757 21.0214 21.325 21.4001C20.893 21.7789 20.318 21.9641 19.76 21.91C16.443 21.5856 13.257 20.5341 10.41 18.84C7.764 17.3 5.551 15.087 4.01 12.44C2.31 9.57955 1.258 6.37525 0.94 3.04C0.886 2.4838 1.07 1.91036 1.447 1.47897C1.824 1.04758 2.359 0.802609 2.92 0.800003H5.92C6.907 0.790283 7.748 1.48687 7.92 2.46C8.117 3.42 8.427 4.35485 8.84 5.24C9.099 5.83028 8.95 6.51302 8.48 6.94L7.22 8.2C8.632 10.9285 10.872 13.1686 13.6 14.58L14.86 13.32C15.29 12.8505 15.973 12.7015 16.563 12.96C17.452 13.373 18.387 13.6826 19.347 13.88C20.335 14.054 21.039 14.9088 21.013 15.904L22 16.92Z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>
+          <span>{{ content.contacto.phone }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+              <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="14" cy="14" r="2.5" fill="white"/>
+            </svg>
+          </div>
+          <span class="footer-logo-text">CONOCER</span>
+        </div>
+        <p class="footer-tagline">{{ content.footer.tagline }}</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Plataforma</h4>
+          <ul>
+            <li><a (click)="scrollTo('certificaciones')">Certificaciones</a></li>
+            <li><a (click)="goToRegister()">Registro candidato</a></li>
+            <li><a (click)="goToLogin()">Iniciar sesión</a></li>
+            <li><a (click)="scrollTo('contacto')">Contacto</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Aviso de privacidad</a></li>
+            <li><a href="#">Términos de servicio</a></li>
+            <li><a href="#">Código de ética</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>{{ content.footer.copyright }}</p>
+      <p class="footer-made">{{ content.footer.madeText }}</p>
+    </div>
+  </div>
+</footer>

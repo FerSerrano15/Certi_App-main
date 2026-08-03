@@ -1,0 +1,54 @@
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
+
+type JwtUser = { id: string; role: string; institution_id: string | null };
+
+export interface AuditLogEntry {
+  user_id?: string | null;
+  institution_id?: string | null;
+  action: string;
+  entity?: string;
+  entityid?: string;
+  metadata?: Record<string, unknown>;
+  ip?: string | null;
+}
+
+/**
+ * Servicio de auditoría, disponible globalmente (ver AuditLogsModule).
+ * El registro nunca debe romper la operación principal: cualquier error
+ * al escribir el log se captura y solo se reporta por consola.
+ */
+@Injectable()
+export class AuditLogsService {
+  constructor(private readonly supabase: SupabaseService) {}
+
+  async log(entry: AuditLogEntry): Promise<void> {
+    try {
+      const { error } = await this.supabase.admin.from('audit_logs').insert({
+        user_id: entry.user_id ?? null,
+        institution_id: entry.institution_id ?? null,
+        action: entry.action,
+        entity: entry.entity ?? null,
+        entityid: entry.entityid ?? null,
+        metadata: entry.metadata ?? null,
+        ip: entry.ip ?? null,
+      });
+      if (error) console.error('[AuditLogsService] Error al registrar auditoría:', error.message);
+    } catch (err) {
+      console.error('[AuditLogsService] Excepción al registrar auditoría:', err);
+    }
+  }
+
+  async list(user: JwtUser, limit = 100, offset = 0) {
+    if (user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo el Super Admin puede ver la bitácora de auditoría.');
+    }
+    const { data, error } = await this.supabase.admin
+      .from('audit_logs')
+      .select('*, users ( id, full_name, email )')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) throw new NotFoundException(error.message);
+    return data ?? [];
+  }
+}

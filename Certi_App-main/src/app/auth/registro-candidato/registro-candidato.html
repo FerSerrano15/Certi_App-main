@@ -1,0 +1,156 @@
+<!-- REGISTRO CANDIDATO / USUARIO -->
+<div class="auth-page">
+  <div class="auth-bg-shapes">
+    <div class="auth-shape s1"></div>
+    <div class="auth-shape s2"></div>
+  </div>
+
+  <div class="reg-wrapper">
+    <!-- Sidebar de pasos -->
+    <aside class="reg-sidebar">
+      <a routerLink="/" class="auth-logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#2dd4bf"/><path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="14" r="2.5" fill="white"/></svg>
+        CertiApp
+      </a>
+      <div class="reg-type-badge">👤 Nuevo usuario</div>
+      <p class="reg-sub">Crea tu cuenta para acceder a la plataforma</p>
+
+      <nav class="steps-nav">
+        <div class="step-nav-item active">
+          <div class="step-nav-num">1</div>
+          <div>
+            <strong>Datos personales</strong>
+            <span>Nombre, correo y contraseña</span>
+          </div>
+        </div>
+        <div class="step-nav-item" style="opacity:0.3">
+          <div class="step-nav-num">2</div>
+          <div>
+            <strong>Acceso</strong>
+            <span>Tu cuenta estará lista</span>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Área del formulario -->
+    <div class="reg-form-area">
+      <div class="step-content">
+        <div class="step-header">
+          <h2>Crear cuenta</h2>
+          <p>Ingresa tus datos para registrarte en la plataforma</p>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="reg-form" novalidate>
+
+          <!-- Nombre completo -->
+          <div class="form-group">
+            <label class="form-label" for="rc-full-name">Nombre completo *</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="rc-full-name" type="text" formControlName="full_name" class="form-input"
+                     placeholder="Tu nombre completo" autocomplete="name">
+            </div>
+            @if (f['full_name'].invalid && f['full_name'].touched) {
+              <span class="form-error">El nombre debe tener al menos 3 caracteres.</span>
+            }
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label" for="rc-email">Correo electrónico *</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="rc-email" type="email" formControlName="email" class="form-input"
+                     placeholder="correo@ejemplo.com" autocomplete="email">
+            </div>
+            @if (f['email'].invalid && f['email'].touched) {
+              <span class="form-error">Ingresa un correo válido.</span>
+            }
+          </div>
+
+          <!-- Teléfono -->
+          <div class="form-group">
+            <label class="form-label" for="rc-phone">Teléfono (10 dígitos)</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.0 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="rc-phone" type="tel" formControlName="phone" class="form-input"
+                     placeholder="5512345678" maxlength="10">
+            </div>
+            @if (f['phone'].invalid && f['phone'].touched) {
+              <span class="form-error">El teléfono debe tener 10 dígitos.</span>
+            }
+          </div>
+
+          <!-- Contraseña -->
+          <div class="form-group">
+            <label class="form-label" for="rc-password">Contraseña *</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="rc-password" [type]="showPassword() ? 'text' : 'password'"
+                     formControlName="password" class="form-input"
+                     placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+              <button type="button" class="input-toggle" (click)="togglePassword()">
+                @if (showPassword()) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                }
+              </button>
+            </div>
+            @if (f['password'].invalid && f['password'].touched) {
+              <span class="form-error">La contraseña debe tener al menos 8 caracteres.</span>
+            }
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div class="form-group">
+            <label class="form-label" for="rc-confirm">Confirmar contraseña *</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="rc-confirm" [type]="showConfirm() ? 'text' : 'password'"
+                     formControlName="confirmarPassword" class="form-input"
+                     placeholder="Repite tu contraseña" autocomplete="new-password">
+              <button type="button" class="input-toggle" (click)="toggleConfirm()">
+                @if (showConfirm()) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                } @else {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                }
+              </button>
+            </div>
+            @if (passwordMismatch) {
+              <span class="form-error">Las contraseñas no coinciden.</span>
+            }
+          </div>
+
+          <!-- Error global -->
+          @if (error()) {
+            <div class="auth-error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              {{ error() }}
+            </div>
+          }
+
+          <!-- Acciones -->
+          <div class="step-actions">
+            <a routerLink="/login" class="btn-step-back">← Ya tengo cuenta</a>
+            <button type="submit" class="btn-step-next" [disabled]="loading()">
+              @if (loading()) {
+                <span class="spinner"></span> Registrando...
+              } @else {
+                Crear cuenta →
+              }
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <p class="reg-footer-note">
+        Al registrarte aceptas nuestros <a href="#" class="auth-link">Términos de uso</a> y
+        <a href="#" class="auth-link">Política de privacidad</a>.
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,210 @@
+<!-- Enrollment Forms Admin View -->
+<div class="efa-wrap">
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="efa-toast">{{ toast() }}</div>
+  }
+
+  <!-- Header -->
+  <div class="efa-header">
+    <div class="efa-header-text">
+      <h2 class="efa-title">Formularios de Inscripción</h2>
+      <p class="efa-sub">Documentos enviados por los participantes</p>
+    </div>
+    <button class="efa-refresh" (click)="load()" title="Actualizar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Search -->
+  <div class="efa-search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </svg>
+    <input type="text" class="efa-search" placeholder="Buscar por nombre, email, curso…"
+      [value]="search()" (input)="search.set($any($event.target).value)">
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="efa-loader">
+      <div class="efa-spinner"></div>
+      <span>Cargando formularios…</span>
+    </div>
+  }
+
+  <!-- Empty -->
+  @if (!loading() && filtered().length === 0) {
+    <div class="efa-empty">
+      <span class="efa-empty-icon">📄</span>
+      <p>Aún no hay formularios enviados</p>
+    </div>
+  }
+
+  <!-- Cards grid -->
+  @if (!loading()) {
+    <div class="efa-grid">
+      @for (g of filtered(); track g.enrollmentId) {
+        <div class="efa-card" (click)="openGroup(g)">
+
+          <div class="efa-card-avatar">
+            {{ g.participantName.charAt(0).toUpperCase() }}
+          </div>
+
+          <div class="efa-card-body">
+            <div class="efa-card-name">{{ g.participantName }}</div>
+            <div class="efa-card-email">{{ g.participantEmail }}</div>
+            <div class="efa-card-course">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              {{ g.courseName }} · {{ g.groupName }}
+            </div>
+          </div>
+
+          <div class="efa-card-badges">
+            <span class="efa-badge" [class.done]="g.cartaSolicitud" [class.pending]="!g.cartaSolicitud">
+              @if (g.cartaSolicitud) { ✓ }
+              Carta
+            </span>
+            <span class="efa-badge" [class.done]="g.fichaRegistro" [class.pending]="!g.fichaRegistro">
+              @if (g.fichaRegistro) { ✓ }
+              Ficha
+            </span>
+          </div>
+
+          <svg class="efa-card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ─────────────── Detail Panel (slide-in) ─────────────── -->
+  @if (selectedGroup()) {
+    <div class="efa-detail-overlay" (click)="closeGroup()">
+      <div class="efa-detail-panel" (click)="$event.stopPropagation()">
+
+        <div class="efa-dp-header">
+          <div>
+            <h3 class="efa-dp-name">{{ selectedGroup()!.participantName }}</h3>
+            <p class="efa-dp-course">{{ selectedGroup()!.courseName }} — {{ selectedGroup()!.groupName }}</p>
+          </div>
+          <button class="efa-dp-close" (click)="closeGroup()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Carta de Solicitud -->
+        <div class="efa-doc-card">
+          <div class="efa-doc-header">
+            <div class="efa-doc-icon carta">📝</div>
+            <div>
+              <div class="efa-doc-title">Carta de Solicitud de Interés</div>
+              @if (selectedGroup()!.cartaSolicitud) {
+                <div class="efa-doc-date">Enviada: {{ formatDate(selectedGroup()!.cartaSolicitud!.submitted_at) }}</div>
+              } @else {
+                <div class="efa-doc-date pending">⏳ Pendiente de envío</div>
+              }
+            </div>
+          </div>
+          @if (selectedGroup()!.cartaSolicitud) {
+            <div class="efa-doc-actions">
+              <button class="btn-view" (click)="viewFormData(selectedGroup()!.cartaSolicitud!)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Ver datos
+              </button>
+              <button class="btn-download"
+                (click)="downloadCarta(selectedGroup()!.cartaSolicitud!)"
+                [disabled]="downloadingId() === selectedGroup()!.cartaSolicitud!.id">
+                @if (downloadingId() === selectedGroup()!.cartaSolicitud!.id) {
+                  <div class="btn-spinner"></div>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                }
+                Descargar PDF
+              </button>
+              @if (isSuperAdmin()) {
+                <button class="btn-delete" (click)="deleteForm(selectedGroup()!.cartaSolicitud!.id)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Ficha de Registro -->
+        <div class="efa-doc-card">
+          <div class="efa-doc-header">
+            <div class="efa-doc-icon ficha">📋</div>
+            <div>
+              <div class="efa-doc-title">Ficha de Registro del Candidato</div>
+              @if (selectedGroup()!.fichaRegistro) {
+                <div class="efa-doc-date">Enviada: {{ formatDate(selectedGroup()!.fichaRegistro!.submitted_at) }}</div>
+              } @else {
+                <div class="efa-doc-date pending">⏳ Pendiente de envío</div>
+              }
+            </div>
+          </div>
+          @if (selectedGroup()!.fichaRegistro) {
+            <div class="efa-doc-actions">
+              <button class="btn-view" (click)="viewFormData(selectedGroup()!.fichaRegistro!)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Ver datos
+              </button>
+              <button class="btn-download"
+                (click)="downloadFicha(selectedGroup()!.fichaRegistro!)"
+                [disabled]="downloadingId() === selectedGroup()!.fichaRegistro!.id">
+                @if (downloadingId() === selectedGroup()!.fichaRegistro!.id) {
+                  <div class="btn-spinner"></div>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                }
+                Descargar PDF
+              </button>
+              @if (isSuperAdmin()) {
+                <button class="btn-delete" (click)="deleteForm(selectedGroup()!.fichaRegistro!.id)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ─────────────── Form Data Viewer ─────────────── -->
+  @if (viewingForm()) {
+    <div class="efa-viewer-overlay" (click)="closeFormView()">
+      <div class="efa-viewer" (click)="$event.stopPropagation()">
+
+        <div class="efa-viewer-header">
+          <h3>{{ viewingForm()!.form_type === 'carta_solicitud' ? 'Carta de Solicitud' : 'Ficha de Registro' }}</h3>
+          <button class="efa-dp-close" (click)="closeFormView()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="efa-viewer-body">
+          @for (entry of getFormDataEntries(viewingForm()!); track entry.key) {
+            <div class="efa-data-row">
+              <span class="efa-data-key">{{ entry.key }}</span>
+              <span class="efa-data-val">{{ entry.value }}</span>
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

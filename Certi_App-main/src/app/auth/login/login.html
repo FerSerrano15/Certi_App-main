@@ -1,0 +1,122 @@
+<div class="auth-page">
+  <div class="auth-bg-shapes">
+    <div class="auth-shape s1"></div>
+    <div class="auth-shape s2"></div>
+  </div>
+
+  <div class="auth-wrapper">
+    <!-- Branding panel -->
+    <div class="auth-brand-panel">
+      <a routerLink="/" class="auth-logo">
+        <svg width="36" height="36" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+          <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2.5" fill="white"/>
+        </svg>
+        <span>CONOCER</span>
+      </a>
+      <h2 class="brand-headline">Tu certificación comienza aquí.</h2>
+      <p class="brand-sub">Accede a tu panel y sigue el estado de tu proceso de certificación de competencias laborales.</p>
+      <div class="brand-features">
+        <div class="brand-feat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" stroke="#2dd4bf" stroke-width="2" stroke-linejoin="round"/><path d="M9 12L11 14L15 10" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Certificados con validez oficial</span>
+        </div>
+        <div class="brand-feat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Proceso 100% transparente</span>
+        </div>
+        <div class="brand-feat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Acompañamiento personalizado</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form panel -->
+    <div class="auth-form-panel">
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <h1 class="auth-title">Iniciar sesión</h1>
+          <p class="auth-subtitle">¿Aún no tienes cuenta? <a routerLink="/registro" class="auth-link">Regístrate gratis</a></p>
+        </div>
+
+        <!-- Error message -->
+        @if (error()) {
+          <div class="auth-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>
+            {{ error() }}
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form">
+          <div class="form-group">
+            <label class="form-label" for="email">Correo electrónico</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="email" type="email" formControlName="email" class="form-input"
+                     placeholder="correo@ejemplo.com" autocomplete="email">
+            </div>
+            @if (email?.invalid && email?.touched) {
+              <span class="form-error">Ingresa un correo válido.</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">
+              Contraseña
+              <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+            </label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                     class="form-input" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+              <button type="button" class="input-toggle" (click)="togglePassword()">
+                @if (showPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                }
+              </button>
+            </div>
+            @if (password?.invalid && password?.touched) {
+              <span class="form-error">La contraseña debe tener al menos 6 caracteres.</span>
+            }
+          </div>
+
+          <button type="submit" class="btn-submit" [disabled]="loading()">
+            @if (loading()) {
+              <div class="spinner"></div>
+              Verificando...
+            } @else {
+              Iniciar sesión
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            }
+          </button>
+        </form>
+
+        <div class="auth-divider"><span>Cuentas de demostración</span></div>
+
+        <div class="demo-accounts">
+          <button class="demo-btn" (click)="loginAs('superadmin@conocer.mx', 'SuperAdmin123!')">
+            <span class="demo-role super">SA</span>
+            <div><strong>SuperAdmin</strong><small>superadmin&#64;conocer.mx</small></div>
+          </button>
+          <button class="demo-btn" (click)="loginAs('admin@conocer.mx', 'Admin123!')">
+            <span class="demo-role admin">AD</span>
+            <div><strong>Admin</strong><small>admin&#64;conocer.mx</small></div>
+          </button>
+          <button class="demo-btn" (click)="loginAs('evaluador@conocer.mx', 'Evaluador123!')">
+            <span class="demo-role eval">EV</span>
+            <div><strong>Evaluador</strong><small>evaluador&#64;conocer.mx</small></div>
+          </button>
+        </div>
+
+        <p class="auth-footer-note">
+          <a routerLink="/" class="auth-back">← Volver al inicio</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

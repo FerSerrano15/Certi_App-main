@@ -1,0 +1,351 @@
+<!-- Enrollment Form Wizard -->
+<div class="wiz-overlay" (click)="close()">
+  <div class="wiz-modal" (click)="$event.stopPropagation()">
+
+    <!-- Toast -->
+    @if (toast()) {
+      <div class="wiz-toast">{{ toast() }}</div>
+    }
+
+    <!-- Header -->
+    <div class="wiz-header">
+      <div class="wiz-header-info">
+        <h2 class="wiz-title">Formularios de Inscripción</h2>
+        <p class="wiz-subtitle">{{ participant().full_name }}</p>
+      </div>
+      <button class="wiz-close" (click)="close()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Steps indicator -->
+    <div class="wiz-steps">
+      <div class="wiz-step" [class.active]="step() === 1" [class.done]="step1Done()" (click)="step1Done() || step() > 1 ? goToStep(1) : null">
+        <div class="wiz-step-circle">
+          @if (step1Done()) { <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg> }
+          @else { 1 }
+        </div>
+        <span class="wiz-step-label">Carta de Solicitud</span>
+      </div>
+      <div class="wiz-step-line" [class.active]="step1Done()"></div>
+      <div class="wiz-step" [class.active]="step() === 2" [class.done]="step2Done()">
+        <div class="wiz-step-circle">
+          @if (step2Done()) { <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg> }
+          @else { 2 }
+        </div>
+        <span class="wiz-step-label">Ficha de Registro</span>
+      </div>
+    </div>
+
+    <!-- ─────────────────── STEP 1: CARTA DE SOLICITUD ─────────────────── -->
+    @if (step() === 1) {
+      <div class="wiz-body" (appAfterRender)="initCanvas(1)">
+        <form [formGroup]="cartaForm" class="wiz-form" novalidate>
+
+          <div class="wiz-section-title">Información del Estándar</div>
+
+          <div class="wiz-row">
+            <div class="wiz-field">
+              <label>Fecha <span class="req">*</span></label>
+              <input type="date" formControlName="fecha" [class.invalid]="cartaForm.get('fecha')?.invalid && cartaForm.get('fecha')?.touched">
+            </div>
+          </div>
+
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>Código del Estándar <span class="req">*</span></label>
+              <input type="text" formControlName="estandarCodigo" placeholder="Ej. EC1268" [class.invalid]="cartaForm.get('estandarCodigo')?.invalid && cartaForm.get('estandarCodigo')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Nombre del Estándar <span class="req">*</span></label>
+              <input type="text" formControlName="estandarNombre" placeholder="Nombre completo del estándar" [class.invalid]="cartaForm.get('estandarNombre')?.invalid && cartaForm.get('estandarNombre')?.touched">
+            </div>
+          </div>
+
+          <div class="wiz-section-title">Datos del Solicitante</div>
+
+          <div class="wiz-field">
+            <label>Nombre Completo <span class="req">*</span></label>
+            <input type="text" formControlName="nombreCompleto" placeholder="Como aparecerá en la carta" [class.invalid]="cartaForm.get('nombreCompleto')?.invalid && cartaForm.get('nombreCompleto')?.touched">
+          </div>
+
+          <!-- Firma Digital -->
+          <div class="wiz-section-title">Firma Digital</div>
+          <p class="wiz-hint">Dibuja tu firma en el recuadro de abajo con el mouse o con el dedo</p>
+
+          <div class="wiz-signature-wrap">
+            <canvas #sigCanvas1 class="wiz-sig-canvas" width="500" height="150"
+              (mousedown)="initCanvas(1)"
+              (touchstart)="initCanvas(1)"></canvas>
+            @if (firma1Base64()) {
+              <div class="sig-check">✓ Firma capturada</div>
+            }
+            <button type="button" class="btn-clear-sig" (click)="clearSignature(1)">Limpiar firma</button>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="wiz-footer">
+        <button class="btn-cancel" (click)="close()">Cancelar</button>
+        <button class="btn-primary" (click)="saveStep1()" [disabled]="loading()">
+          @if (loading()) { <span class="spinner"></span> }
+          Guardar y Continuar →
+        </button>
+      </div>
+    }
+
+    <!-- ─────────────────── STEP 2: FICHA DE REGISTRO ─────────────────── -->
+    @if (step() === 2) {
+      <div class="wiz-body" (appAfterRender)="initCanvas(2)">
+        <form [formGroup]="fichaForm" class="wiz-form" novalidate>
+
+          <!-- Estándar -->
+          <div class="wiz-section-title">Estándar de Competencia</div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>Nombre del Estándar <span class="req">*</span></label>
+              <input type="text" formControlName="estandarCompetencia" [class.invalid]="fichaForm.get('estandarCompetencia')?.invalid && fichaForm.get('estandarCompetencia')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Código <span class="req">*</span></label>
+              <input type="text" formControlName="estandarCodigo" [class.invalid]="fichaForm.get('estandarCodigo')?.invalid && fichaForm.get('estandarCodigo')?.touched">
+            </div>
+          </div>
+          <div class="wiz-field half">
+            <label>Fecha de Registro <span class="req">*</span></label>
+            <input type="date" formControlName="fechaRegistro" [class.invalid]="fichaForm.get('fechaRegistro')?.invalid && fichaForm.get('fechaRegistro')?.touched">
+          </div>
+
+          <!-- Datos Personales -->
+          <div class="wiz-section-title">Datos Personales</div>
+          <div class="wiz-field">
+            <label>Nombre Completo <span class="req">*</span></label>
+            <input type="text" formControlName="nombreCompleto" [class.invalid]="fichaForm.get('nombreCompleto')?.invalid && fichaForm.get('nombreCompleto')?.touched">
+          </div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>Lugar de Nacimiento <span class="req">*</span></label>
+              <input type="text" formControlName="lugarNacimiento" placeholder="Ciudad, Estado" [class.invalid]="fichaForm.get('lugarNacimiento')?.invalid && fichaForm.get('lugarNacimiento')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Nacionalidad <span class="req">*</span></label>
+              <input type="text" formControlName="nacionalidad" [class.invalid]="fichaForm.get('nacionalidad')?.invalid && fichaForm.get('nacionalidad')?.touched">
+            </div>
+          </div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>CURP <span class="req">*</span></label>
+              <input type="text" formControlName="curp" placeholder="XXXX000000XXXXXX00" style="text-transform:uppercase" [class.invalid]="fichaForm.get('curp')?.invalid && fichaForm.get('curp')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Fecha de Nacimiento <span class="req">*</span></label>
+              <input type="date" formControlName="fechaNacimiento" [class.invalid]="fichaForm.get('fechaNacimiento')?.invalid && fichaForm.get('fechaNacimiento')?.touched">
+            </div>
+          </div>
+
+          <div class="wiz-field">
+            <label>Género <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-opt"><input type="radio" formControlName="genero" value="Hombre"> Hombre</label>
+              <label class="radio-opt"><input type="radio" formControlName="genero" value="Mujer"> Mujer</label>
+            </div>
+          </div>
+
+          <!-- Domicilio -->
+          <div class="wiz-section-title">Domicilio</div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>Calle <span class="req">*</span></label>
+              <input type="text" formControlName="calle" [class.invalid]="fichaForm.get('calle')?.invalid && fichaForm.get('calle')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Número <span class="req">*</span></label>
+              <input type="text" formControlName="numero" placeholder="Ext./Int." [class.invalid]="fichaForm.get('numero')?.invalid && fichaForm.get('numero')?.touched">
+            </div>
+          </div>
+          <div class="wiz-row three-col">
+            <div class="wiz-field">
+              <label>C.P. <span class="req">*</span></label>
+              <input type="text" formControlName="cp" placeholder="00000" [class.invalid]="fichaForm.get('cp')?.invalid && fichaForm.get('cp')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Colonia <span class="req">*</span></label>
+              <input type="text" formControlName="colonia" [class.invalid]="fichaForm.get('colonia')?.invalid && fichaForm.get('colonia')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Ciudad / Municipio <span class="req">*</span></label>
+              <input type="text" formControlName="ciudad" [class.invalid]="fichaForm.get('ciudad')?.invalid && fichaForm.get('ciudad')?.touched">
+            </div>
+          </div>
+          <div class="wiz-field half">
+            <label>Entidad Federativa <span class="req">*</span></label>
+            <input type="text" formControlName="entidadFederativa" [class.invalid]="fichaForm.get('entidadFederativa')?.invalid && fichaForm.get('entidadFederativa')?.touched">
+          </div>
+
+          <!-- Contacto -->
+          <div class="wiz-section-title">Contacto</div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>Correo Electrónico <span class="req">*</span></label>
+              <input type="email" formControlName="email" [class.invalid]="fichaForm.get('email')?.invalid && fichaForm.get('email')?.touched">
+            </div>
+            <div class="wiz-field">
+              <label>Teléfono <span class="req">*</span></label>
+              <input type="tel" formControlName="telefono" placeholder="10 dígitos" [class.invalid]="fichaForm.get('telefono')?.invalid && fichaForm.get('telefono')?.touched">
+            </div>
+          </div>
+          <div class="wiz-field half">
+            <label>Teléfono Celular</label>
+            <input type="tel" formControlName="telefonoCelular" placeholder="10 dígitos (opcional)">
+          </div>
+
+          <!-- RENAP -->
+          <div class="wiz-section-title">Registro Nacional (RENAP)</div>
+          <div class="wiz-field">
+            <label>¿Autoriza publicar sus datos en el RENAP? <span class="req">*</span></label>
+            <div class="radio-group">
+              @for (opt of siNoOpts; track opt.value) {
+                <label class="radio-opt"><input type="radio" formControlName="consentimientoRenap" [value]="opt.value"> {{ opt.label }}</label>
+              }
+            </div>
+          </div>
+
+          <!-- Info Confidencial -->
+          <div class="wiz-section-title">Información Complementaria</div>
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>¿Sabe leer y escribir? <span class="req">*</span></label>
+              <div class="radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="radio-opt"><input type="radio" formControlName="sabeLeerEscribir" [value]="opt.value"> {{ opt.label }}</label>
+                }
+              </div>
+            </div>
+            <div class="wiz-field">
+              <label>¿Cuenta con estudios? <span class="req">*</span></label>
+              <div class="radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="radio-opt"><input type="radio" formControlName="cuentaEstudios" [value]="opt.value"> {{ opt.label }}</label>
+                }
+              </div>
+            </div>
+          </div>
+          @if (fichaForm.get('cuentaEstudios')?.value === 'Sí') {
+            <div class="wiz-field">
+              <label>¿Cuáles estudios?</label>
+              <input type="text" formControlName="cualesEstudios" placeholder="Nivel / Institución">
+            </div>
+          }
+
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>¿Trabaja actualmente? <span class="req">*</span></label>
+              <div class="radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="radio-opt"><input type="radio" formControlName="trabajaActualmente" [value]="opt.value"> {{ opt.label }}</label>
+                }
+              </div>
+            </div>
+            <div class="wiz-field">
+              <label>¿Tiene alguna discapacidad? <span class="req">*</span></label>
+              <div class="radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="radio-opt"><input type="radio" formControlName="tieneDiscapacidad" [value]="opt.value"> {{ opt.label }}</label>
+                }
+              </div>
+            </div>
+          </div>
+
+          @if (fichaForm.get('tieneDiscapacidad')?.value === 'Sí') {
+            <div class="wiz-field">
+              <label>Tipo de discapacidad</label>
+              <div class="check-group">
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadMotriz"> Motriz</label>
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadVisual"> Visual</label>
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadAuditiva"> Auditiva</label>
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadLenguaje"> Lenguaje</label>
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadIntelectual"> Intelectual</label>
+                <label class="check-opt"><input type="checkbox" formControlName="discapacidadOtras"> Otras</label>
+              </div>
+            </div>
+          }
+
+          @if (fichaForm.get('trabajaActualmente')?.value === 'Sí') {
+            <div class="wiz-field">
+              <label>Puesto de trabajo</label>
+              <input type="text" formControlName="puestoTrabajo" placeholder="Cargo actual">
+            </div>
+          }
+
+          <div class="wiz-field">
+            <label>Idioma(s) o lengua(s)</label>
+            <input type="text" formControlName="idiomas" placeholder="Ej. Español, Inglés">
+          </div>
+
+          <div class="wiz-field">
+            <label>Experiencia laboral</label>
+            <textarea formControlName="experienciaLaboral" rows="3" placeholder="Describa su experiencia relevante"></textarea>
+          </div>
+
+          <div class="wiz-row two-col">
+            <div class="wiz-field">
+              <label>¿Cuenta con certificaciones? <span class="req">*</span></label>
+              <div class="radio-group">
+                @for (opt of siNoOpts; track opt.value) {
+                  <label class="radio-opt"><input type="radio" formControlName="cuentaCertificacion" [value]="opt.value"> {{ opt.label }}</label>
+                }
+              </div>
+            </div>
+            @if (fichaForm.get('cuentaCertificacion')?.value === 'Sí') {
+              <div class="wiz-field">
+                <label>¿Cuáles certificaciones?</label>
+                <input type="text" formControlName="cualesCertificaciones">
+              </div>
+            }
+          </div>
+
+          <div class="wiz-field">
+            <label>Observaciones</label>
+            <textarea formControlName="observaciones" rows="2"></textarea>
+          </div>
+
+          <!-- Firma Digital -->
+          <div class="wiz-section-title">Nombre y Firma del Candidato</div>
+          <p class="wiz-hint">Dibuja tu firma con el mouse o con el dedo</p>
+          <div class="wiz-signature-wrap">
+            <canvas #sigCanvas2 class="wiz-sig-canvas" width="500" height="150"
+              (mousedown)="initCanvas(2)"
+              (touchstart)="initCanvas(2)"></canvas>
+            @if (firma2Base64()) {
+              <div class="sig-check">✓ Firma capturada</div>
+            }
+            <button type="button" class="btn-clear-sig" (click)="clearSignature(2)">Limpiar firma</button>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="wiz-footer">
+        <button class="btn-secondary" (click)="goToStep(1)">← Anterior</button>
+        <button class="btn-primary" (click)="saveStep2()" [disabled]="loading()">
+          @if (loading()) { <span class="spinner"></span> }
+          @if (!loading()) { Enviar Ficha de Registro ✓ }
+        </button>
+      </div>
+    }
+
+    <!-- ─────────────────── COMPLETADO ─────────────────── -->
+    @if (step1Done() && step2Done()) {
+      <div class="wiz-complete">
+        <div class="wiz-complete-icon">🎉</div>
+        <h3>¡Documentos enviados exitosamente!</h3>
+        <p>El administrador podrá revisar y descargar los formularios desde su panel.</p>
+        <button class="btn-primary" (click)="close()">Cerrar</button>
+      </div>
+    }
+
+  </div>
+</div>

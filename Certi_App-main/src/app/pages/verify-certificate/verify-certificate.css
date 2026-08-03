@@ -1,0 +1,57 @@
+.verify-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2rem 1.25rem;
+  background: linear-gradient(160deg, #0f172a 0%, #0d2137 100%);
+}
+
+.verify-card {
+  width: 100%; max-width: 560px;
+  background: #ffffff; border-radius: 20px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+}
+
+.verify-logo {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  text-decoration: none; color: #0f172a; font-weight: 800;
+  font-size: 1rem; letter-spacing: 0.05em; margin-bottom: 1.5rem;
+}
+
+.verify-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem; }
+.verify-subtitle { font-size: 0.9rem; color: #64748b; margin: 0 0 1.5rem; }
+
+.verify-form { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.verify-input {
+  flex: 1; min-width: 220px;
+  padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid #cbd5e1;
+  font-size: 0.95rem; font-family: inherit; color: #0f172a; outline: none;
+  transition: border-color 0.2s;
+}
+.verify-input:focus { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.2); }
+.verify-btn {
+  padding: 0.8rem 1.5rem; border-radius: 10px; border: none;
+  background: #2dd4bf; color: #0f172a; font-weight: 800; font-size: 0.9rem;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.verify-btn:hover:not(:disabled) { background: #14b8a6; }
+.verify-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.verify-result {
+  border-radius: 14px; padding: 1.5rem; text-align: center;
+  animation: verifyFadeIn 0.3s ease;
+}
+@keyframes verifyFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.verify-result.valid { background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.3); }
+.verify-result.invalid { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); }
+.verify-result.not-found { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); }
+.verify-result-icon { font-size: 2.25rem; margin-bottom: 0.5rem; }
+.verify-result h2 { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem; }
+.verify-result p { font-size: 0.85rem; color: #64748b; margin: 0 0 1rem; }
+
+.verify-detail-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem; text-align: left; margin-top: 0.75rem;
+}
+.verify-label { display: block; font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+.verify-value { display: block; font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-top: 0.15rem; }

@@ -1,0 +1,312 @@
+<!-- GESTIÓN DE INSTITUCIONES -->
+<div class="inst-wrap">
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="inst-toast" [class.err]="toastType() === 'err'">
+      @if (toastType() === 'ok') {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M21 12A9 9 0 113 12a9 9 0 0118 0z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/></svg>
+      } @else {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>
+      }
+      {{ toast() }}
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="inst-header">
+    <div>
+      <h2 class="inst-title">🏛️ Instituciones</h2>
+      <p class="inst-subtitle">Administra las organizaciones certificadoras registradas</p>
+    </div>
+    <button class="btn-inst-primary" (click)="openNew()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      Nueva institución
+    </button>
+  </div>
+
+  <!-- Stats -->
+  @if (stats()) {
+    <div class="inst-stats">
+      <div class="stat-pill">
+        <span class="stat-pill-val">{{ stats()!.total }}</span>
+        <span class="stat-pill-label">Total</span>
+      </div>
+      <div class="stat-pill green">
+        <span class="stat-pill-val">{{ stats()!.activas }}</span>
+        <span class="stat-pill-label">Activas</span>
+      </div>
+      <div class="stat-pill red">
+        <span class="stat-pill-val">{{ stats()!.inactivas }}</span>
+        <span class="stat-pill-label">Inactivas</span>
+      </div>
+      <div class="stat-pill blue">
+        <span class="stat-pill-val">{{ stats()!.usuarios }}</span>
+        <span class="stat-pill-label">Usuarios totales</span>
+      </div>
+      <div class="stat-pill orange">
+        <span class="stat-pill-val">{{ stats()!.sinAsignar }}</span>
+        <span class="stat-pill-label">Sin institución</span>
+      </div>
+    </div>
+  }
+
+  <!-- Filtros -->
+  <div class="inst-filters">
+    <div class="inst-search-wrap">
+      <svg class="inst-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input class="inst-search" type="text" placeholder="Buscar por nombre, slug o correo…"
+             [value]="search()" (input)="search.set($any($event.target).value)">
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab" [class.active]="filterActive() === 'all'" (click)="filterActive.set('all')">Todas</button>
+      <button class="filter-tab" [class.active]="filterActive() === 'active'" (click)="filterActive.set('active')">Activas</button>
+      <button class="filter-tab" [class.active]="filterActive() === 'inactive'" (click)="filterActive.set('inactive')">Inactivas</button>
+    </div>
+  </div>
+
+  <!-- Tabla de instituciones -->
+  @if (loading() && institutions().length === 0) {
+    <div class="inst-loading">
+      <div class="inst-spinner"></div><span>Cargando instituciones…</span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="inst-empty">
+      <div class="inst-empty-icon">🏛️</div>
+      <h3>Sin instituciones</h3>
+      <p>Crea la primera institución en la plataforma</p>
+      <button class="btn-inst-primary" (click)="openNew()">Agregar institución</button>
+    </div>
+  } @else {
+    <div class="inst-grid">
+      @for (inst of filtered(); track inst.id) {
+        <div class="inst-card" [class.inactive]="!inst.is_active">
+          <!-- Logo / Iniciales -->
+          <div class="inst-card-header">
+            @if (inst.logo_url) {
+              <img class="inst-logo" [src]="inst.logo_url" [alt]="inst.name" (error)="$any($event.target).style.display='none'">
+            } @else {
+              <div class="inst-initials">{{ getInitials(inst.name) }}</div>
+            }
+            <div class="inst-card-header-info">
+              <h3 class="inst-name">{{ inst.name }}</h3>
+              <code class="inst-slug">{{ inst.slug }}</code>
+            </div>
+            <div class="inst-card-actions">
+              <button class="inst-action-btn" title="Ver detalle" (click)="openDetail(inst)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+              </button>
+              <button class="inst-action-btn" title="Editar" (click)="openEdit(inst)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+              <button class="inst-action-btn" [title]="inst.is_active ? 'Desactivar' : 'Activar'" (click)="toggle(inst)">
+                @if (inst.is_active) {
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                } @else {
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                }
+              </button>
+              <button class="inst-action-btn danger" title="Eliminar" (click)="remove(inst)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="inst-card-body">
+            @if (inst.contact_email) {
+              <div class="inst-meta-row">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                {{ inst.contact_email }}
+              </div>
+            }
+            @if (inst.phone) {
+              <div class="inst-meta-row">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.81 19.79 19.79 0 01.0 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                {{ inst.phone }}
+              </div>
+            }
+            @if (inst.tax_id) {
+              <div class="inst-meta-row">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                RFC: {{ inst.tax_id }}
+              </div>
+            }
+          </div>
+
+          <div class="inst-card-footer">
+            <span class="inst-status-chip" [class.active]="inst.is_active" [class.inactive-chip]="!inst.is_active">
+              {{ inst.is_active ? '● Activa' : '○ Inactiva' }}
+            </span>
+            <span class="inst-date">{{ inst.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: Nueva / Editar institución
+     ══════════════════════════════════════════════════════════════ -->
+@if (showModal()) {
+  <div class="inst-modal-backdrop" (click)="closeModal()">
+    <div class="inst-modal" (click)="$event.stopPropagation()">
+      <div class="inst-modal-header">
+        <h3>{{ editingInst() ? 'Editar institución' : 'Nueva institución' }}</h3>
+        <button class="inst-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="save()" class="inst-modal-form">
+
+        <!-- Nombre -->
+        <div class="mf-group">
+          <label>Nombre de la institución *</label>
+          <input type="text" formControlName="name" placeholder="Ej: UNAM Facultad de Contaduría"
+                 (input)="slugify($any($event.target).value)">
+          @if (f['name'].invalid && f['name'].touched) {
+            <span class="mf-error">El nombre es requerido (mín. 3 caracteres)</span>
+          }
+        </div>
+
+        <!-- Slug -->
+        <div class="mf-group">
+          <label>Slug (URL) <span class="mf-hint">— se genera automáticamente del nombre</span></label>
+          <div class="mf-slug-wrap">
+            <span class="mf-slug-prefix">certiapp.mx/</span>
+            <input type="text" formControlName="slug" placeholder="unam-fca" class="mf-slug-input">
+          </div>
+          @if (f['slug'].invalid && f['slug'].touched) {
+            <span class="mf-error">Solo minúsculas, números y guiones</span>
+          }
+        </div>
+
+        <div class="mf-row">
+          <!-- RFC -->
+          <div class="mf-group">
+            <label>RFC / Tax ID</label>
+            <input type="text" formControlName="tax_id" placeholder="UNAM810101XXX" maxlength="13">
+          </div>
+          <!-- Teléfono -->
+          <div class="mf-group">
+            <label>Teléfono</label>
+            <input type="tel" formControlName="phone" placeholder="5512345678" maxlength="15">
+          </div>
+        </div>
+
+        <!-- Correo -->
+        <div class="mf-group">
+          <label>Correo de contacto</label>
+          <input type="email" formControlName="contact_email" placeholder="contacto@institucion.mx">
+          @if (f['contact_email'].invalid && f['contact_email'].touched) {
+            <span class="mf-error">Ingresa un correo válido</span>
+          }
+        </div>
+
+        <!-- Logo -->
+        <div class="mf-group">
+          <label>URL del logo</label>
+          <input type="url" formControlName="logo_url" placeholder="https://mi-institución.mx/logo.png">
+          @if (f['logo_url'].value) {
+            <div class="mf-logo-preview">
+              <img [src]="f['logo_url'].value" alt="Logo preview" class="mf-logo-img">
+            </div>
+          }
+        </div>
+
+        <!-- Activo -->
+        <div class="mf-toggle-row">
+          <label class="mf-toggle">
+            <input type="checkbox" formControlName="is_active">
+            <span class="mf-toggle-track"></span>
+          </label>
+          <span class="mf-toggle-label">Institución activa</span>
+        </div>
+
+        <!-- Acciones -->
+        <div class="mf-actions">
+          <button type="button" class="btn-mf-cancel" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-mf-save" [disabled]="loading()">
+            @if (loading()) { <span class="mf-spinner"></span> }
+            {{ editingInst() ? 'Guardar cambios' : 'Crear institución' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     PANEL LATERAL: Detalle de institución
+     ══════════════════════════════════════════════════════════════ -->
+@if (detailOpen() && selectedInst()) {
+  <div class="detail-backdrop" (click)="closeDetail()">
+    <div class="detail-panel" (click)="$event.stopPropagation()">
+      <div class="detail-header">
+        <div class="detail-header-left">
+          @if (selectedInst()!.logo_url) {
+            <img class="detail-logo" [src]="selectedInst()!.logo_url" [alt]="selectedInst()!.name">
+          } @else {
+            <div class="detail-initials">{{ getInitials(selectedInst()!.name) }}</div>
+          }
+          <div>
+            <h3>{{ selectedInst()!.name }}</h3>
+            <code>{{ selectedInst()!.slug }}</code>
+          </div>
+        </div>
+        <button class="detail-close" (click)="closeDetail()">×</button>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-section">
+          <h4>Información general</h4>
+          <div class="detail-grid">
+            <div class="detail-field"><label>Estado</label>
+              <span class="inst-status-chip" [class.active]="selectedInst()!.is_active" [class.inactive-chip]="!selectedInst()!.is_active">
+                {{ selectedInst()!.is_active ? 'Activa' : 'Inactiva' }}
+              </span>
+            </div>
+            <div class="detail-field"><label>RFC</label><span>{{ selectedInst()!.tax_id || '—' }}</span></div>
+            <div class="detail-field"><label>Correo</label><span>{{ selectedInst()!.contact_email || '—' }}</span></div>
+            <div class="detail-field"><label>Teléfono</label><span>{{ selectedInst()!.phone || '—' }}</span></div>
+            <div class="detail-field"><label>Creada</label><span>{{ selectedInst()!.created_at | date:'dd/MM/yyyy HH:mm' }}</span></div>
+            <div class="detail-field"><label>Actualizada</label><span>{{ selectedInst()!.updated_at | date:'dd/MM/yyyy HH:mm' }}</span></div>
+          </div>
+        </div>
+
+        @if (selectedInst()!.users && selectedInst()!.users!.length > 0) {
+          <div class="detail-section">
+            <h4>Usuarios ({{ selectedInst()!.users!.length }})</h4>
+            <div class="detail-users">
+              @for (u of selectedInst()!.users!; track u.id) {
+                <div class="detail-user-row">
+                  <div class="detail-user-avatar">{{ u.full_name.charAt(0).toUpperCase() }}</div>
+                  <div class="detail-user-info">
+                    <span class="detail-user-name">{{ u.full_name }}</span>
+                    <span class="detail-user-email">{{ u.email }}</span>
+                  </div>
+                  <span class="detail-role-badge">{{ getRoleLabel(u.role) }}</span>
+                  <span class="inst-status-chip sm" [class.active]="u.is_active" [class.inactive-chip]="!u.is_active">
+                    {{ u.is_active ? '●' : '○' }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="detail-section">
+            <h4>Usuarios</h4>
+            <p class="detail-empty">Sin usuarios asignados a esta institución.</p>
+          </div>
+        }
+
+        <div class="detail-actions">
+          <button class="btn-mf-cancel" (click)="openEdit(selectedInst()!); closeDetail()">✏️ Editar institución</button>
+          <button class="btn-danger-outline" (click)="toggle(selectedInst()!)">
+            {{ selectedInst()!.is_active ? '⏸ Desactivar' : '▶ Activar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

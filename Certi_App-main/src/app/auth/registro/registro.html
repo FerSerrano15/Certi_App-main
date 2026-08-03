@@ -1,0 +1,72 @@
+<div class="auth-page selector-page">
+  <div class="auth-bg-shapes">
+    <div class="auth-shape s1"></div><div class="auth-shape s2"></div>
+  </div>
+  <div class="selector-container">
+    <a routerLink="/" class="auth-logo">
+      <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="6" fill="#2dd4bf"/>
+        <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="2.5" fill="white"/>
+      </svg>
+      <span>CONOCER</span>
+    </a>
+
+    <div class="selector-header">
+      <h1>¿Cómo deseas registrarte?</h1>
+      <p>Elige el tipo de cuenta que mejor describe tu rol en el proceso de certificación.</p>
+    </div>
+
+    <div class="selector-cards">
+      <!-- CANDIDATO -->
+      <a routerLink="/registro/candidato" class="selector-card">
+        <div class="sel-icon-wrap teal">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="7" r="4" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="sel-content">
+          <h2>Candidato</h2>
+          <p class="sel-tagline">Consultoría · Capacitación · Certificación</p>
+          <p class="sel-desc">Registra tus datos personales, sube tus documentos y fotografía para iniciar tu proceso de certificación de competencias laborales.</p>
+          <ul class="sel-list">
+            <li>✓ Datos personales y CURP</li>
+            <li>✓ Carga de documentos (INE, CURP, Foto)</li>
+            <li>✓ Fotografía con cámara o galería</li>
+            <li>✓ Seguimiento en tiempo real</li>
+          </ul>
+        </div>
+        <div class="sel-arrow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </a>
+
+      <!-- EVALUADOR -->
+      <a routerLink="/registro/evaluador" class="selector-card">
+        <div class="sel-icon-wrap purple">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="sel-content">
+          <h2>Evaluador</h2>
+          <p class="sel-tagline">Consultoría · Capacitación · Certificación</p>
+          <p class="sel-desc">Solicita acceso como evaluador acreditado. Tu cuenta iniciará como Candidato y un administrador revisará tu solicitud para asignarte el rol de Evaluador.</p>
+          <ul class="sel-list">
+            <li>✓ Estándares EC que puedes evaluar</li>
+            <li>✓ Documentación completa requerida</li>
+            <li>✓ Revisión y aprobación por administrador</li>
+            <li>⚠ Acceso a modo evaluador sujeto a aprobación</li>
+          </ul>
+        </div>
+        <div class="sel-arrow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </a>
+    </div>
+
+    <p class="sel-footer">¿Ya tienes cuenta? <a routerLink="/login" class="auth-link">Inicia sesión</a></p>
+  </div>
+</div>
