@@ -17,11 +17,13 @@ export interface CandidateDocument {
   participants?: { id: string; full_name: string; email: string } | null;
 }
 
-export const DOCUMENT_TYPES: { value: string; label: string }[] = [
-  { value: 'INE', label: 'Identificación oficial (INE)' },
+export type DocRequirement = 'required' | 'optional' | undefined;
+
+export const DOCUMENT_TYPES: { value: string; label: string; requirement?: DocRequirement }[] = [
+  { value: 'INE', label: 'Identificación oficial (INE)', requirement: 'required' },
   { value: 'COMPROBANTE_DOMICILIO', label: 'Comprobante de domicilio' },
   { value: 'CURP', label: 'CURP' },
-  { value: 'COMPROBANTE_ESTUDIOS', label: 'Comprobante de estudios' },
+  { value: 'COMPROBANTE_ESTUDIOS', label: 'Comprobante de estudios', requirement: 'optional' },
   { value: 'FOTOGRAFIA', label: 'Fotografía' },
   { value: 'OTRO', label: 'Otro' },
 ];
@@ -32,18 +34,30 @@ export class DocumentsService {
   private readonly auth = inject(AuthService);
   private token() { return this.auth.getToken() ?? ''; }
 
+  private errorMessage(err: any, fallback: string): string {
+    const backendMsg = err?.error?.message;
+    return Array.isArray(backendMsg) ? backendMsg.join(', ') : (backendMsg || err?.message || fallback);
+  }
+
+  /**
+   * @throws Error con el mensaje real del backend si la carga falla — antes
+   *   se tragaba el error y devolvía `[]`, que en la UI se ve idéntico a
+   *   "no hay documentos" y esconde el problema real (igual que pasó con
+   *   la lista de usuarios).
+   */
   async list(participantId?: string): Promise<CandidateDocument[]> {
     const qs = participantId ? `?participant_id=${participantId}` : '';
     try { return await firstValueFrom(this.api.get<CandidateDocument[]>(`/documents${qs}`, this.token())); }
-    catch { return []; }
+    catch (err: any) { throw new Error(this.errorMessage(err, 'No se pudo cargar la lista de documentos.')); }
   }
 
-  async uploadSelf(type: string, file: File): Promise<CandidateDocument | null> {
+  /** @throws Error con el mensaje real del backend si la subida falla. */
+  async uploadSelf(type: string, file: File): Promise<CandidateDocument> {
     const fd = new FormData();
     fd.append('type', type);
     fd.append('file', file);
     try { return await firstValueFrom(this.api.postFormData<CandidateDocument>('/documents/self', fd, this.token())); }
-    catch { return null; }
+    catch (err: any) { throw new Error(this.errorMessage(err, 'No se pudo subir el documento.')); }
   }
 
   async uploadForParticipant(participantId: string, type: string, file: File): Promise<CandidateDocument | null> {

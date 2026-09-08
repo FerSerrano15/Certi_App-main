@@ -17,8 +17,12 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
 
   @ViewChild('bellBtn') bellBtn!: ElementRef<HTMLButtonElement>;
 
-  /** Emite cuando el admin quiere ver el detalle de una solicitud (navega a la vista de Solicitudes). */
-  openSolicitudes = output<void>();
+  /** Emite cuando el admin quiere ver el detalle de una solicitud (navega a la vista de Solicitudes y resalta la ficha, si la notificación trae ficha_id). */
+  openSolicitudes = output<string | null>();
+  /** Notificación de foto de perfil: navega a Usuarios y filtra por el nombre del candidato. */
+  openUsuario = output<{ user_id: string; full_name: string | null }>();
+  /** Notificación de documento subido: navega a Solicitudes de Certificación → Documentos del candidato. */
+  openParticipantDocs = output<{ participant_id: string; full_name: string | null; user_id?: string | null }>();
 
   open = signal(false);
   unreadCount = signal(0);
@@ -70,11 +74,39 @@ export class NotificationsBellComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Lleva al admin a la vista de "Solicitudes" (lista de fichas con su estado) en vez de abrir el PDF aquí. */
-  async verSolicitud(n: AppNotification, ev: Event) {
+  /** Texto del botón de acción, según el tipo de notificación. */
+  actionLabel(n: AppNotification): string {
+    if (n.type === 'AVATAR_UPLOADED') return 'Ver usuario';
+    if (n.type === 'DOCUMENT_UPLOADED') return 'Ver documentos';
+    return 'Ver solicitud';
+  }
+
+  /**
+   * Acción principal de cada notificación — a dónde navega depende del
+   * tipo, porque cada una vive en una parte distinta del dashboard:
+   *  - AVATAR_UPLOADED   → Usuarios (filtrado por nombre)
+   *  - DOCUMENT_UPLOADED → Solicitudes de Certificación → Documentos
+   *  - cualquier otra (fichas de registro, etc.) → Solicitudes de Ficha
+   */
+  async handleAction(n: AppNotification, ev: Event) {
     ev.stopPropagation();
     if (!n.read) await this.markRead(n, ev);
     this.close();
-    this.openSolicitudes.emit();
+    if (n.type === 'AVATAR_UPLOADED') {
+      this.openUsuario.emit({
+        user_id: (n.payload?.['user_id'] as string) ?? '',
+        full_name: (n.payload?.['full_name'] as string) ?? null,
+      });
+      return;
+    }
+    if (n.type === 'DOCUMENT_UPLOADED') {
+      this.openParticipantDocs.emit({
+        participant_id: (n.payload?.['participant_id'] as string) ?? '',
+        full_name: (n.payload?.['full_name'] as string) ?? null,
+        user_id: (n.payload?.['user_id'] as string | null) ?? null,
+      });
+      return;
+    }
+    this.openSolicitudes.emit(n.payload?.ficha_id ?? null);
   }
 }

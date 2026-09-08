@@ -8,6 +8,7 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { ParticipantsService } from '../participants/participants.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type JwtUser = { id: string; role: string; email: string };
 type ParticipantRow = { id: string; user_id: string | null };
@@ -20,6 +21,7 @@ export class DocumentsService {
     private readonly supabase: SupabaseService,
     private readonly participants: ParticipantsService,
     private readonly auditLogs: AuditLogsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private requireAdmin(user: JwtUser) {
@@ -115,7 +117,35 @@ export class DocumentsService {
       metadata: { type, participant_id: participant.id },
     });
 
+    // Todo documento subido por (o para) un candidato queda "pending" hasta
+    // que un admin confirme su veracidad — el aviso es lo que dispara esa
+    // revisión humana (evitamos que quede subido en silencio, sin que
+    // nadie lo note).
+    const { data: participantRow } = await this.supabase.admin
+      .from('participants')
+      .select('full_name')
+      .eq('id', participant.id)
+      .single<{ full_name: string }>();
+    await this.notifications.notifyAdmins({
+      type: 'DOCUMENT_UPLOADED',
+      title: 'Nuevo documento para validar',
+      message: `${participantRow?.full_name ?? 'Un candidato'} subió ${this.typeLabel(type)}. Revisa su veracidad.`,
+      payload: { document_id: data.id, participant_id: participant.id, user_id: participant.user_id, full_name: participantRow?.full_name, type },
+    });
+
     return data;
+  }
+
+  private typeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      INE: 'su identificación oficial (INE)',
+      COMPROBANTE_DOMICILIO: 'su comprobante de domicilio',
+      CURP: 'su CURP',
+      COMPROBANTE_ESTUDIOS: 'su comprobante de estudios',
+      FOTOGRAFIA: 'una fotografía',
+      OTRO: 'un documento',
+    };
+    return labels[type] ?? `un documento (${type})`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════

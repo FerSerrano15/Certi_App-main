@@ -1,0 +1,317 @@
+<div class="pw-wrap">
+  @if (loading()) {
+  <p class="pw-loading">Cargando expediente…</p>
+  } @else if (!process()) {
+  <div class="pw-empty">No se encontró el proceso de certificación o no tienes acceso a él.</div>
+  } @else {
+  <div class="pw-header">
+    <div>
+      <button class="pw-back" (click)="close()">← Volver</button>
+      <h2 class="pw-title">{{ process()!.estandar?.nombre }} <span class="pw-codigo">({{ process()!.estandar?.codigo }})</span></h2>
+      <p class="pw-folio">Folio: <strong>{{ process()!.folio }}</strong></p>
+    </div>
+    <span class="pw-status-badge" [attr.data-status]="process()!.status">{{ statusLabel(process()!.status) }}</span>
+  </div>
+
+  <div class="pw-meta">
+    <div><span class="pw-meta-label">Candidato</span><span>{{ process()!.participant?.full_name }}</span></div>
+    <div><span class="pw-meta-label">Evaluador</span><span>{{ process()!.evaluator?.full_name }}</span></div>
+    <div><span class="pw-meta-label">Curso</span><span>{{ process()!.course?.name }}</span></div>
+    @if (process()!.group) {
+    <div><span class="pw-meta-label">Grupo</span><span>{{ process()!.group?.name }}</span></div>
+    }
+  </div>
+
+  @if (process()!.judgment) {
+  <div class="pw-judgment-banner" [class.competente]="process()!.judgment!.result === 'competente'">
+    Dictamen: <strong>{{ process()!.judgment!.result === 'competente' ? 'COMPETENTE' : 'AÚN NO COMPETENTE' }}</strong>
+  </div>
+  }
+
+  @if (myCertificate()) {
+  <div class="pw-cert-banner">
+    🎓 Certificado {{ myCertificate()!.status }} — folio <strong>{{ myCertificate()!.folio }}</strong>.
+    <a href="/verificar/{{ myCertificate()!.folio }}" target="_blank">Ver verificación pública →</a>
+  </div>
+  }
+
+  @if (feedback()) {
+  <div class="pw-feedback">{{ feedback() }}</div>
+  }
+
+  <div class="pw-stages">
+    @for (stage of process()!.stages; track stage.id) {
+    <div class="pw-stage" [class.expanded]="expanded() === stage.stage_code">
+      <button class="pw-stage-header" (click)="toggle(stage)">
+        <span class="pw-stage-icon" [attr.data-status]="stage.status">{{ stageIcon(stage.status) }}</span>
+        <span class="pw-stage-name">{{ stageLabel(stage.stage_code) }}</span>
+        <span class="pw-stage-status">{{ stage.status }}</span>
+      </button>
+
+      @if (expanded() === stage.stage_code) {
+      <div class="pw-stage-body">
+
+        <!-- 1) Derechos y obligaciones -->
+        @if (stage.stage_code === 'DERECHOS_OBLIGACIONES') {
+          @if (rights()?.['accepted']) {
+          <p class="pw-ok">✓ Aceptado.</p>
+          } @else if (isCandidato()) {
+          <p>Al continuar, aceptas los derechos y obligaciones del proceso de certificación.</p>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doAcceptRights()">Aceptar</button>
+          } @else {
+          <p class="pw-muted">Pendiente de aceptación por el candidato.</p>
+          }
+        }
+
+        <!-- 2) Diagnóstico -->
+        @if (stage.stage_code === 'DIAGNOSTICO') {
+          @if (canActEvaluador()) {
+          <label class="pw-field">Resultado
+            <select [ngModel]="diagResult()" (ngModelChange)="diagResult.set($event)">
+              <option value="competente">Competente</option>
+              <option value="no_competente">No competente</option>
+              <option value="en_proceso">En proceso</option>
+            </select>
+          </label>
+          <label class="pw-field">Observaciones
+            <textarea [ngModel]="diagObservations()" (ngModelChange)="diagObservations.set($event)" rows="2"></textarea>
+          </label>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doSaveDiagnostic()">Guardar diagnóstico</button>
+          } @else if (diagnostic()) {
+          <p>Resultado: <strong>{{ diagnostic()!['result'] }}</strong></p>
+          } @else {
+          <p class="pw-muted">El evaluador aún no ha aplicado el diagnóstico.</p>
+          }
+        }
+
+        <!-- 3) Carta compromiso -->
+        @if (stage.stage_code === 'CARTA_COMPROMISO') {
+          @if (commitment()?.['signed']) {
+          <p class="pw-ok">✓ Firmada.</p>
+          } @else if (isCandidato()) {
+          <p>Firma electrónicamente tu carta compromiso para continuar con el proceso.</p>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doSignCommitment()">Firmar carta compromiso</button>
+          } @else {
+          <p class="pw-muted">Pendiente de firma por el candidato.</p>
+          }
+        }
+
+        <!-- 4) Plan de evaluación -->
+        @if (stage.stage_code === 'PLAN_EVALUACION') {
+          @if (canActEvaluador() && (!plan() || plan()!['status'] === 'borrador' || plan()!['status'] === 'rechazado')) {
+          <div class="pw-grid2">
+            <label class="pw-field">Inicio planeado <input type="date" [ngModel]="planStart()" (ngModelChange)="planStart.set($event)"></label>
+            <label class="pw-field">Fin planeado <input type="date" [ngModel]="planEnd()" (ngModelChange)="planEnd.set($event)"></label>
+            <label class="pw-field">Ubicación <input type="text" [ngModel]="planLocation()" (ngModelChange)="planLocation.set($event)"></label>
+            <label class="pw-field">Modalidad <input type="text" placeholder="Presencial / En línea" [ngModel]="planModality()" (ngModelChange)="planModality.set($event)"></label>
+          </div>
+          <label class="pw-field">Observaciones <textarea [ngModel]="planObservations()" (ngModelChange)="planObservations.set($event)" rows="2"></textarea></label>
+          <div class="pw-actions">
+            <button class="pw-btn" [disabled]="busy()" (click)="doSavePlan(false)">Guardar borrador</button>
+            <button class="pw-btn primary" [disabled]="busy()" (click)="doSavePlan(true)">Enviar a revisión</button>
+          </div>
+          } @else if (plan()) {
+          <p>Estado del plan: <strong>{{ plan()!['status'] }}</strong></p>
+          @if (plan()!['status'] === 'propuesto' && isAdmin()) {
+          <label class="pw-field">Observaciones <textarea [ngModel]="planObservations()" (ngModelChange)="planObservations.set($event)" rows="2"></textarea></label>
+          <div class="pw-actions">
+            <button class="pw-btn danger" [disabled]="busy()" (click)="doReviewPlan(false)">Rechazar</button>
+            <button class="pw-btn primary" [disabled]="busy()" (click)="doReviewPlan(true)">Aprobar plan</button>
+          </div>
+          }
+          } @else {
+          <p class="pw-muted">El evaluador aún no ha propuesto el plan de evaluación.</p>
+          }
+        }
+
+        <!-- 5) Preparación de la evaluación -->
+        @if (stage.stage_code === 'PREPARACION_EVALUACION') {
+          @if (stage.status === 'completed') {
+          <p class="pw-ok">✓ Preparación completada.</p>
+          } @else if (canActEvaluador()) {
+          <p>Confirma que la logística y preparación previa a la evaluación está lista.</p>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doCompletePreparacion()">Marcar como completada</button>
+          } @else {
+          <p class="pw-muted">En preparación por el evaluador.</p>
+          }
+        }
+
+        <!-- 6) Recopilación de evidencias -->
+        @if (stage.stage_code === 'RECOPILACION_EVIDENCIAS') {
+          <div class="pw-evidence-list">
+            @for (ev of evidences(); track ev.id) {
+            <div class="pw-evidence-item">
+              <div>
+                <strong>{{ ev.file_name }}</strong>
+                <span class="pw-muted"> — {{ ev.evidence_type }}</span>
+                <span class="pw-chip" [attr.data-status]="ev.status">{{ ev.status }}</span>
+              </div>
+              @if (canActEvaluador() && ev.status === 'pendiente') {
+              <div class="pw-actions">
+                <button class="pw-btn xs" (click)="doReviewEvidence(ev, 'validada')">Validar</button>
+                <button class="pw-btn xs danger" (click)="doReviewEvidence(ev, 'rechazada')">Rechazar</button>
+              </div>
+              }
+            </div>
+            } @empty {
+            <p class="pw-muted">Sin evidencias registradas todavía.</p>
+            }
+          </div>
+
+          @if (isCandidato() || canActEvaluador()) {
+          <div class="pw-upload-form">
+            <input type="file" (change)="onFileSelected($event)">
+            <input type="text" placeholder="Tipo de evidencia (ej: fotografía, documento)" [ngModel]="evType()" (ngModelChange)="evType.set($event)">
+            <input type="text" placeholder="Descripción (opcional)" [ngModel]="evDescription()" (ngModelChange)="evDescription.set($event)">
+            <button class="pw-btn primary" [disabled]="busy()" (click)="doUploadEvidence()">Subir evidencia</button>
+          </div>
+          }
+          @if (canActEvaluador() && stage.status !== 'completed') {
+          <button class="pw-btn" [disabled]="busy()" (click)="doCompleteEvidenceStage()">Cerrar etapa de evidencias</button>
+          }
+        }
+
+        <!-- 7) Instrumento de evaluación -->
+        @if (stage.stage_code === 'INSTRUMENTO_EVALUACION') {
+          @if (!instrument().length) {
+          @if (canActEvaluador()) {
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doInitInstrument()">Inicializar instrumento</button>
+          } @else {
+          <p class="pw-muted">El evaluador aún no ha inicializado el instrumento.</p>
+          }
+          } @else {
+          <div class="pw-instrument-list">
+            @for (r of instrument(); track r.id) {
+            <div class="pw-reactivo">
+              <p class="pw-reactivo-desc">{{ r.reactivos?.codigo_reactivo }} — {{ r.reactivos?.descripcion }}</p>
+              @if (canActEvaluador()) {
+              <div class="pw-reactivo-controls">
+                <label><input type="radio" [checked]="r.respuesta === true" (change)="setReactivoRespuesta(r, true)"> Sí</label>
+                <label><input type="radio" [checked]="r.respuesta === false" (change)="setReactivoRespuesta(r, false)"> No</label>
+                <input type="text" placeholder="Observaciones" [ngModel]="r.observaciones ?? ''" (ngModelChange)="setReactivoObs(r, $event)">
+              </div>
+              } @else {
+              <span class="pw-chip" [attr.data-status]="r.respuesta === null ? 'pendiente' : (r.respuesta ? 'validada' : 'rechazada')">
+                {{ r.respuesta === null ? 'Sin responder' : (r.respuesta ? 'Sí' : 'No') }}
+              </span>
+              }
+            </div>
+            }
+          </div>
+          @if (canActEvaluador()) {
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doSaveReactivos()">Guardar respuestas</button>
+          }
+          }
+        }
+
+        <!-- 8) Cédula de evaluación -->
+        @if (stage.stage_code === 'CEDULA_EVALUACION') {
+          @if (cedula()) {
+          <p>Calificación: <strong>{{ cedula()!['total_score'] }}%</strong></p>
+          } @else if (canActEvaluador()) {
+          <label class="pw-field">Observaciones <textarea [ngModel]="cedulaObservations()" (ngModelChange)="cedulaObservations.set($event)" rows="2"></textarea></label>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doCloseCedula()">Cerrar cédula</button>
+          } @else {
+          <p class="pw-muted">Aún no se ha cerrado la cédula.</p>
+          }
+        }
+
+        <!-- 9) Emisión de juicio -->
+        @if (stage.stage_code === 'EMISION_JUICIO') {
+          @if (judgment()) {
+          <p>Resultado: <strong>{{ judgment()!['result'] === 'competente' ? 'COMPETENTE' : 'AÚN NO COMPETENTE' }}</strong></p>
+          } @else {
+            @if (readiness() && !readiness()!.ready) {
+            <div class="pw-readiness-warning">
+              <strong>Requisitos pendientes para poder emitir COMPETENTE:</strong>
+              <ul>@for (m of readiness()!.missing; track m) { <li>{{ m }}</li> }</ul>
+            </div>
+            }
+            @if (isAssignedEvaluador()) {
+            <label class="pw-field">Resultado
+              <select [ngModel]="judgmentResult()" (ngModelChange)="judgmentResult.set($event)">
+                <option value="competente">Competente</option>
+                <option value="aun_no_competente">Aún no competente</option>
+              </select>
+            </label>
+            <label class="pw-field">Calificación final (opcional) <input type="number" min="0" max="100" [ngModel]="judgmentScore()" (ngModelChange)="judgmentScore.set($event)"></label>
+            <label class="pw-field">Observaciones <textarea [ngModel]="judgmentObservations()" (ngModelChange)="judgmentObservations.set($event)" rows="2"></textarea></label>
+            <button class="pw-btn primary" [disabled]="busy()" (click)="doEmitJudgment()">Emitir juicio</button>
+            } @else {
+            <p class="pw-muted">Solo el evaluador asignado puede emitir el juicio.</p>
+            }
+          }
+        }
+
+        <!-- 10) Presentación de resultados -->
+        @if (stage.stage_code === 'PRESENTACION_RESULTADOS') {
+          @if (resultsPresentation()) {
+          <p class="pw-ok">✓ Resultados presentados el {{ $any(resultsPresentation()!['presented_at']) | date:'dd/MM/yyyy' }}.</p>
+          } @else if (canActEvaluador()) {
+          @if (!judgment()) {
+          <p class="pw-muted">Primero debe emitirse el juicio.</p>
+          } @else {
+          <label class="pw-field"><input type="checkbox" [ngModel]="participantAccepted()" (ngModelChange)="participantAccepted.set($event)"> El candidato acepta los resultados</label>
+          <label class="pw-field">Observaciones <textarea [ngModel]="presentObservations()" (ngModelChange)="presentObservations.set($event)" rows="2"></textarea></label>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doPresentResults()">Presentar resultados</button>
+          }
+          } @else {
+          <p class="pw-muted">Pendiente de presentación por el evaluador.</p>
+          }
+        }
+
+        <!-- 11) Trámite de certificado -->
+        @if (stage.stage_code === 'TRAMITE_CERTIFICADO') {
+          @if (!isAdmin()) {
+          <p class="pw-muted">El trámite de certificado lo gestiona el administrador una vez emitido el juicio COMPETENTE.</p>
+          } @else {
+            @if (process()!.judgment?.result !== 'competente') {
+            <p class="pw-muted">El juicio debe ser COMPETENTE para iniciar el trámite.</p>
+            } @else if (!certRequests().length) {
+            <button class="pw-btn primary" [disabled]="busy()" (click)="doCreateCertRequest()">Iniciar trámite de certificado</button>
+            } @else {
+              @for (req of certRequests(); track req.id) {
+              <div class="pw-cert-request">
+                <span>Estado: <strong>{{ req.status }}</strong></span>
+                @if (req.status === 'pendiente' || req.status === 'en_revision') {
+                <div class="pw-actions">
+                  <button class="pw-btn danger xs" [disabled]="busy()" (click)="doReviewCertRequest(req, false)">Rechazar</button>
+                  <button class="pw-btn primary xs" [disabled]="busy()" (click)="doReviewCertRequest(req, true)">Aprobar y emitir</button>
+                </div>
+                }
+              </div>
+              }
+            }
+          }
+        }
+
+        <!-- 12/13) Encuestas -->
+        @if (stage.stage_code === 'ENCUESTA_SATISFACCION' || stage.stage_code === 'ENCUESTA_PROCESO_CERTIFICACION') {
+          @if (stage.status === 'completed') {
+          <p class="pw-ok">✓ Encuesta respondida. ¡Gracias!</p>
+          } @else if (isCandidato()) {
+          <label class="pw-field">¿Cómo calificarías el proceso en general?
+            <select [ngModel]="surveyAnswers()['calificacion_general'] ?? ''" (ngModelChange)="setSurveyAnswer('calificacion_general', $event)">
+              <option value="">Selecciona…</option>
+              <option value="excelente">Excelente</option>
+              <option value="bueno">Bueno</option>
+              <option value="regular">Regular</option>
+              <option value="malo">Malo</option>
+            </select>
+          </label>
+          <label class="pw-field">Comentarios (opcional)
+            <textarea rows="2" [ngModel]="surveyAnswers()['comentarios'] ?? ''" (ngModelChange)="setSurveyAnswer('comentarios', $event)"></textarea>
+          </label>
+          <button class="pw-btn primary" [disabled]="busy()" (click)="doSubmitSurvey(stage.stage_code === 'ENCUESTA_SATISFACCION' ? 'ENCUESTA_SATISFACCION' : 'ENCUESTA_PROCESO_CERTIFICACION')">Enviar encuesta</button>
+          } @else {
+          <p class="pw-muted">Pendiente de respuesta por el candidato.</p>
+          }
+        }
+
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
+</div>

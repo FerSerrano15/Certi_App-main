@@ -14,14 +14,12 @@ export interface Program {
 export interface Course {
   id: string;
   program_id: string | null;
-  estandar_id: string | null;
+  estandar_id: string;
   name: string;
   code: string;
   description: string | null;
   duration_hours: number;
-  passing_grade: number;
-  min_attendance: number;
-  validity_months: number | null;
+  modality: string | null;
   is_active: boolean;
   created_at: string;
   programs?: { id: string; name: string } | null;
@@ -33,10 +31,13 @@ export interface Group {
   course_id: string;
   evaluator_id: string | null;
   name: string;
+  code: string | null;
   start_date: string | null;
   end_date: string | null;
   capacity: number | null;
-  status: 'PLANEADO' | 'EN_CURSO' | 'FINALIZADO' | 'CANCELADO';
+  /** El valor por defecto en la base de datos es 'abierto'; el resto de
+   * valores válidos depende del CHECK constraint real de la tabla `groups`. */
+  status: string;
   created_at: string;
   courses?: { id: string; name: string; code: string } | null;
   users?: { id: string; full_name: string } | null;
@@ -100,6 +101,28 @@ export class CoursesService {
   async createCourse(data: Partial<Course>): Promise<Course | null> {
     try { return await firstValueFrom(this.api.post<Course>('/courses', data, this.token())); }
     catch { return null; }
+  }
+
+  /** Igual que createCourse(), pero devuelve el mensaje real del backend en vez de tragárselo. */
+  async createCourseChecked(data: Partial<Course>): Promise<{ ok: boolean; data: Course | null; error?: string }> {
+    try {
+      const result = await firstValueFrom(this.api.post<Course>('/courses', data, this.token()));
+      return { ok: true, data: result };
+    } catch (err: unknown) {
+      return { ok: false, data: null, error: this.extractError(err) };
+    }
+  }
+
+  private extractError(err: unknown): string {
+    if (
+      err !== null && typeof err === 'object' && 'error' in err &&
+      (err as { error: unknown }).error !== null && typeof (err as { error: unknown }).error === 'object' &&
+      'message' in (err as { error: Record<string, unknown> }).error
+    ) {
+      const msg = (err as { error: { message: unknown } }).error.message;
+      return Array.isArray(msg) ? (msg as string[]).join(', ') : String(msg);
+    }
+    return 'Ocurrió un error. Intenta de nuevo.';
   }
 
   async updateCourse(id: string, data: Partial<Course>): Promise<Course | null> {

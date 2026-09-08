@@ -7,7 +7,14 @@ export class CreateCertificationDto {
   @IsIn(['EVALUATOR_CREDENTIAL', 'STANDARD'])
   type: 'EVALUATOR_CREDENTIAL' | 'STANDARD';
 
-  // Obligatorio cuando type = 'STANDARD'. Debe coincidir con courses.code (ej: 'EC0217').
+  // Obligatorio cuando type = 'STANDARD'. Referencia al catálogo de estándares
+  // (paso previo a validar evaluadores calificados para ese estándar).
+  @IsOptional()
+  @IsUUID()
+  estandar_id?: string;
+
+  // Snapshot legible del estándar (ej. 'EC0217'); se autocompleta si no se manda
+  // pero se puede sobreescribir para credenciales sin estándar (EVALUATOR_CREDENTIAL).
   @IsOptional()
   @IsString()
   code?: string;
@@ -16,8 +23,10 @@ export class CreateCertificationDto {
   @IsString()
   name?: string;
 
+  // NOTA: la tabla real usa 'vencida'/'revocada'/'cancelada' (femenino, concuerda
+  // con "certificación"), no 'vencido'/'revocado'.
   @IsOptional()
-  @IsIn(['vigente', 'vencido', 'revocado'])
+  @IsIn(['vigente', 'vencida', 'revocada', 'cancelada'])
   status?: string;
 
   @IsOptional()

@@ -103,11 +103,12 @@ export class CoursesService {
         code:            dto.code,
         description:     dto.description ?? null,
         program_id:      dto.program_id ?? null,
-        estandar_id:     dto.estandar_id ?? null,
-        duration_hours:  dto.duration_hours ?? 0,
-        passing_grade:   dto.passing_grade ?? 70,
-        min_attendance:  dto.min_attendance ?? 80,
-        validity_months: dto.validity_months ?? null,
+        estandar_id:     dto.estandar_id,
+        // `courses_duration_hours_check` exige > 0; si no se especifica
+        // (p.ej. alta rápida desde "Preparación del curso"), usamos 1 como
+        // valor mínimo válido — el admin puede editarlo después desde Cursos.
+        duration_hours:  dto.duration_hours ?? 1,
+        modality:        dto.modality ?? null,
         is_active:       true,
       })
       .select('*').single();
@@ -208,7 +209,7 @@ export class CoursesService {
     return data ?? [];
   }
 
-  async createGroup(dto: { course_id: string; name: string; evaluator_id?: string; start_date?: string; end_date?: string; capacity?: number; status?: string }, user: JwtUser) {
+  async createGroup(dto: { course_id: string; name: string; code?: string; evaluator_id?: string; start_date?: string; end_date?: string; capacity?: number; status?: string }, user: JwtUser) {
     this.requireAdmin(user);
     if (dto.evaluator_id) {
       await this.assertEvaluatorEligible(dto.course_id, dto.evaluator_id, user);
@@ -222,7 +223,8 @@ export class CoursesService {
         start_date:    dto.start_date ?? null,
         end_date:      dto.end_date ?? null,
         capacity:      dto.capacity ?? null,
-        status:        dto.status ?? 'PLANEADO',
+        code:          dto.code ?? null,
+        status:        dto.status ?? 'abierto',
       })
       .select('*').single();
     if (error) throw new ConflictException(error.message);

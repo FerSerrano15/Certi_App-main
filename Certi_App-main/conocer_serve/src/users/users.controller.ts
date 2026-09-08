@@ -1,20 +1,32 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Param,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Request,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
+
+const AVATAR_UPLOAD_OPTIONS = {
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req: unknown, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+};
 
 interface AuthenticatedRequest extends Request {
   user: { id: string; email: string; role: string };
@@ -72,6 +84,39 @@ export class UsersController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.usersService.update(id, body as Parameters<UsersService['update']>[1], req.user);
+  }
+
+  /**
+   * POST /api/users/:id/avatar
+   * Sube (o reemplaza) la foto de perfil. El propio usuario puede cambiar la
+   * suya; un admin puede cambiar la de cualquiera. Body: multipart/form-data
+   * con el campo "file" (JPG/PNG/WEBP, máx. 5 MB).
+   */
+  @Post(':id/avatar')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file', AVATAR_UPLOAD_OPTIONS))
+  uploadAvatar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('face_check') faceCheck: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.usersService.uploadAvatar(id, file, req.user, faceCheck);
+  }
+
+  /**
+   * PATCH /api/users/:id/avatar-review
+   * Un admin valida o rechaza la foto de perfil de un usuario.
+   * Body: { action: 'validated' | 'rejected' }
+   */
+  @Patch(':id/avatar-review')
+  @HttpCode(HttpStatus.OK)
+  reviewAvatar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('action') action: 'validated' | 'rejected',
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.usersService.reviewAvatar(id, action, req.user);
   }
 
   /**

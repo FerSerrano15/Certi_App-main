@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { EnrollmentFormsService, EnrollmentFormWithParticipant, EnrollmentForm } from '../../core/services/enrollment-forms.service';
 import { PdfService } from '../../core/services/pdf.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 
 interface FormGroup {
   participantName: string;
@@ -23,6 +24,7 @@ interface FormGroup {
 })
 export class EnrollmentFormsAdminComponent implements OnInit {
   private readonly svc  = inject(EnrollmentFormsService);
+  private readonly confirmSvc = inject(ConfirmDialogService);
   private readonly pdf  = inject(PdfService);
   readonly auth         = inject(AuthService);
 
@@ -127,7 +129,11 @@ export class EnrollmentFormsAdminComponent implements OnInit {
 
   // ─── Delete (SUPER_ADMIN) ─────────────────────────────────────────────────
   async deleteForm(id: string) {
-    if (!confirm('¿Eliminar este formulario? Esta acción no se puede deshacer.')) return;
+    const ok1 = await this.confirmSvc.ask({
+      title: 'Eliminar formulario',
+      message: '¿Eliminar este formulario? Esta acción no se puede deshacer.',
+    });
+    if (!ok1) return;
     const ok = await this.svc.remove(id);
     if (ok) { this.showToast('✅ Formulario eliminado'); await this.load(); }
     else this.showToast('❌ Error al eliminar');

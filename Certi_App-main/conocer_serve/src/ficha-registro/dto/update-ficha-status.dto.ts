@@ -1,6 +1,6 @@
 import { IsIn } from 'class-validator';
 
 export class UpdateFichaStatusDto {
-  @IsIn(['pendiente', 'aprobada', 'rechazada'])
-  status: 'pendiente' | 'aprobada' | 'rechazada';
+  @IsIn(['validada', 'rechazada'])
+  status: 'validada' | 'rechazada';
 }

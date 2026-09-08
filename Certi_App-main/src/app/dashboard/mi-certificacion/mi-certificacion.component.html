@@ -1,0 +1,99 @@
+<div class="mc-wrap">
+
+  @if (view() === 'process' && selectedProcessId()) {
+  <app-process-workspace [processId]="selectedProcessId()!" (closed)="onProcessClosed()"></app-process-workspace>
+  }
+
+  @if (view() === 'list') {
+  <div class="mc-header">
+    <div>
+      <h2 class="mc-title">Mi Certificación</h2>
+      <p class="mc-sub">Solicita la certificación de un estándar de competencia y da seguimiento a tu proceso.</p>
+    </div>
+    <button class="mc-new-btn" (click)="openNew()">+ Nueva solicitud</button>
+  </div>
+
+  @if (feedback()) { <div class="mc-feedback">{{ feedback() }}</div> }
+
+  @if (loading()) {
+  <p class="mc-muted">Cargando…</p>
+  } @else if (!solicitudes().length) {
+  <div class="mc-empty">
+    <h3>Aún no tienes solicitudes de certificación</h3>
+    <p>Selecciona el estándar de competencia que deseas certificar para comenzar.</p>
+    <button class="mc-new-btn" (click)="openNew()">+ Nueva solicitud</button>
+  </div>
+  } @else {
+  <div class="mc-list">
+    @for (s of solicitudes(); track s.id) {
+    <div class="mc-card">
+      <div class="mc-card-body">
+        <span class="mc-card-codigo">{{ s.estandares?.codigo }}</span>
+        <span class="mc-card-nombre">{{ s.estandares?.nombre }}</span>
+        <span class="mc-card-date">Enviada: {{ s.application_date | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <span class="mc-status" [attr.data-status]="s.status">{{ statusLabel(s.status) }}</span>
+      <button class="mc-card-btn" (click)="openDetail(s)">Ver detalle</button>
+    </div>
+    }
+  </div>
+  }
+  }
+
+  @if (view() === 'new') {
+  <button class="mc-back-btn" (click)="backToList()">← Volver</button>
+  <div class="mc-new-panel">
+    <h3>¿Qué estándar deseas certificar?</h3>
+    @if (creating()) {
+    <p class="mc-muted">Enviando solicitud…</p>
+    } @else {
+    <app-estandar-picker (selected)="onEstandarSelected($event)"></app-estandar-picker>
+    }
+  </div>
+  }
+
+  @if (view() === 'detail' && selected()) {
+  <button class="mc-back-btn" (click)="backToList()">← Volver</button>
+  <div class="mc-detail">
+    <div class="mc-detail-header">
+      <div>
+        <h3>{{ selected()!.estandar?.nombre }} <span class="mc-codigo">({{ selected()!.estandar?.codigo }})</span></h3>
+        <p class="mc-muted">Solicitud enviada el {{ selected()!.application_date | date:'dd/MM/yyyy' }}</p>
+      </div>
+      <span class="mc-status" [attr.data-status]="selected()!.status">{{ statusLabel(selected()!.status) }}</span>
+    </div>
+
+    @if (selected()!.notes) {
+    <div class="mc-notes"><strong>Observaciones del administrador:</strong> {{ selected()!.notes }}</div>
+    }
+
+    @if (selected()!.process) {
+    <div class="mc-process-cta">
+      <p>Tu proceso de certificación ya fue creado (folio <strong>{{ selected()!.process!.folio }}</strong>).</p>
+      <button class="mc-new-btn" (click)="openProcess()">Ir a mi proceso de certificación →</button>
+    </div>
+    } @else if (selected()!.status === 'aprobada') {
+    <p class="mc-muted">Tu solicitud fue aprobada. El administrador preparará tu curso/grupo y asignará un evaluador en breve.</p>
+    } @else if (selected()!.status === 'pendiente' || selected()!.status === 'en_revision') {
+    <p class="mc-muted">Tu solicitud está siendo revisada por un administrador.</p>
+    }
+
+    <h4>Historial</h4>
+    <div class="mc-history">
+      @for (h of selected()!.history; track h.id) {
+      <div class="mc-history-item">
+        <span class="mc-history-action">{{ h.action }}</span>
+        <span class="mc-muted">{{ h.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      } @empty {
+      <p class="mc-muted">Sin movimientos registrados.</p>
+      }
+    </div>
+
+    @if (['pendiente','en_revision','aprobada'].includes(selected()!.status)) {
+    <button class="mc-cancel-btn" (click)="cancel(selected()!)">Cancelar solicitud</button>
+    }
+  </div>
+  }
+
+</div>

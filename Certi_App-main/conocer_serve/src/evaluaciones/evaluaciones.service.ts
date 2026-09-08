@@ -130,9 +130,9 @@ export class EvaluacionesService {
 
     const { data: enrollment, error: enrErr } = await this.supabase.admin
       .from('enrollments')
-      .select('id, groups ( courses ( passing_grade ) )')
+      .select('id')
       .eq('id', enrollmentId)
-      .single<{ id: string; groups: { courses: { passing_grade: number } | null } | null }>();
+      .single<{ id: string }>();
     if (enrErr || !enrollment) throw new NotFoundException('Inscripción no encontrada.');
 
     const { data: respuestas } = await this.supabase.admin
@@ -145,7 +145,11 @@ export class EvaluacionesService {
     const pesoTotal = rows.reduce((sum, r) => sum + pesoDe(r), 0);
     const pesoObtenido = rows.reduce((sum, r) => sum + (r.respuesta ? pesoDe(r) : 0), 0);
     const porcentaje = pesoTotal > 0 ? Math.round((pesoObtenido / pesoTotal) * 100) : 0;
-    const passingGrade = enrollment.groups?.courses?.passing_grade ?? 70;
+    // La columna `passing_grade` ya no existe en `courses`; el umbral de
+    // aprobación para este flujo legado de evaluación por inscripción se
+    // mantiene fijo en 70% (el flujo de certificación nuevo calcula el
+    // resultado desde los pesos de los reactivos, sin depender de este valor).
+    const passingGrade = 70;
     const competencyResult = porcentaje >= passingGrade ? 'competente' : 'aun_no_competente';
 
     const { error } = await this.supabase.admin

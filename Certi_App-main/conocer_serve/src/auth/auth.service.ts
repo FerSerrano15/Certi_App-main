@@ -29,6 +29,8 @@ export interface DbUser {
   full_name: string;
   role: UserRole;
   phone: string | null;
+  avatar_url: string | null;
+  avatar_status: string | null;
   is_active: boolean;
   refresh_token_hash: string | null;
   created_at: string;

@@ -1,0 +1,35 @@
+<div class="ep-wrap">
+
+  @if (selectedId()) {
+  <app-process-workspace [processId]="selectedId()!" (closed)="onClosed()"></app-process-workspace>
+  } @else {
+
+  <div class="ep-header">
+    <h2 class="ep-title">Mis Procesos de Certificación</h2>
+    <p class="ep-sub">Procesos donde has sido asignado como evaluador.</p>
+  </div>
+
+  @if (loading()) {
+  <p class="ep-muted">Cargando…</p>
+  } @else if (!procesos().length) {
+  <div class="ep-empty">
+    <h3>Aún no tienes procesos asignados</h3>
+    <p>Cuando un administrador te asigne como evaluador de un candidato, aparecerá aquí.</p>
+  </div>
+  } @else {
+  <div class="ep-list">
+    @for (p of procesos(); track p.id) {
+    <div class="ep-card" (click)="open(p.id)">
+      <div class="ep-card-body">
+        <span class="ep-card-folio">{{ p.folio }}</span>
+        <span class="ep-card-nombre">{{ p.estandares?.nombre }} ({{ p.estandares?.codigo }})</span>
+        <span class="ep-card-candidato">{{ p.participants?.full_name }}</span>
+      </div>
+      <span class="ep-status" [attr.data-status]="p.status">{{ statusLabel(p.status) }}</span>
+    </div>
+    }
+  </div>
+  }
+  }
+
+</div>

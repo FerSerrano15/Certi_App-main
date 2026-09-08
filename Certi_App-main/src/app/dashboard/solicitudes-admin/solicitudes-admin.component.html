@@ -1,0 +1,234 @@
+<div class="sa-wrap">
+
+  @if (openProcessId()) {
+  <app-process-workspace [processId]="openProcessId()!" (closed)="onProcessWorkspaceClosed()"></app-process-workspace>
+  } @else if (!selected()) {
+
+  <div class="sa-header">
+    <h2 class="sa-title">Solicitudes de Certificación</h2>
+    <p class="sa-sub">Revisa, aprueba y prepara las solicitudes de certificación de los candidatos.</p>
+  </div>
+
+
+
+  <div class="sa-filters">
+    @for (f of [
+      { id: '', label: 'Todas' }, { id: 'pendiente', label: 'Pendiente' }, { id: 'en_revision', label: 'En revisión' },
+      { id: 'aprobada', label: 'Aprobada' }, { id: 'rechazada', label: 'Rechazada' }, { id: 'completada', label: 'Completada' }
+    ]; track f.id) {
+    <button class="sa-filter-btn" [class.active]="filterStatus() === f.id" (click)="setFilter(f.id)">{{ f.label }}</button>
+    }
+  </div>
+
+  @if (loading()) {
+  <p class="sa-muted">Cargando…</p>
+  } @else if (!solicitudes().length) {
+  <div class="sa-empty">No hay solicitudes {{ filterStatus() ? 'con este estado' : 'registradas' }}.</div>
+  } @else {
+  <div class="sa-list">
+    @for (s of solicitudes(); track s.id) {
+    <div class="sa-card" (click)="openDetail(s)">
+      <div class="sa-card-body">
+        <span class="sa-card-candidato">{{ s.participants?.full_name }}</span>
+        <span class="sa-card-estandar">{{ s.estandares?.codigo }} — {{ s.estandares?.nombre }}</span>
+        <span class="sa-card-date">{{ s.application_date | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <span class="sa-status" [attr.data-status]="s.status">{{ statusLabel(s.status) }}</span>
+    </div>
+    }
+  </div>
+  }
+
+  } @else {
+
+  <button class="sa-back-btn" (click)="backToList()">← Volver al listado</button>
+
+  <div class="sa-detail-header">
+    <div>
+      <h3>{{ selected()!.participants?.full_name ?? selected()!.candidato?.full_name }}</h3>
+      <p class="sa-muted">{{ selected()!.estandares?.codigo ?? selected()!.estandar?.codigo }} — {{ selected()!.estandares?.nombre ?? selected()!.estandar?.nombre }}</p>
+    </div>
+    <span class="sa-status" [attr.data-status]="selected()!.status">{{ statusLabel(selected()!.status) }}</span>
+  </div>
+
+  <div class="sa-tabs">
+    @for (t of tabs; track t.id) {
+    <button class="sa-tab-btn" [class.active]="activeTab() === t.id" (click)="setTab(t.id)">{{ t.label }}</button>
+    }
+  </div>
+
+  <div class="sa-tab-body">
+
+    @if (activeTab() === 'candidato') {
+    <div class="sa-info-grid">
+      <div><span class="sa-info-label">Nombre</span><span>{{ selected()!.candidato?.full_name }}</span></div>
+      <div><span class="sa-info-label">Correo</span><span>{{ selected()!.candidato?.email }}</span></div>
+      <div><span class="sa-info-label">Teléfono</span><span>{{ selected()!.candidato?.phone ?? '—' }}</span></div>
+    </div>
+    }
+
+    @if (activeTab() === 'estandar') {
+    <div class="sa-info-grid">
+      <div><span class="sa-info-label">Código</span><span>{{ selected()!.estandar?.codigo }}</span></div>
+      <div><span class="sa-info-label">Nombre</span><span>{{ selected()!.estandar?.nombre }}</span></div>
+      <div><span class="sa-info-label">Versión</span><span>{{ selected()!.estandar?.version }}</span></div>
+      <div><span class="sa-info-label">Vigente</span><span>{{ selected()!.estandar?.vigente ? 'Sí' : 'No' }}</span></div>
+    </div>
+    @if (selected()!.fichaRegistro) {
+    <h4 class="sa-subtitle">Ficha de registro</h4>
+    <div class="sa-info-grid">
+      <div><span class="sa-info-label">Estado</span><span>{{ selected()!.fichaRegistro!['status'] }}</span></div>
+      @if (selected()!.fichaRegistro!['curp']) {
+      <div><span class="sa-info-label">CURP</span><span>{{ selected()!.fichaRegistro!['curp'] }}</span></div>
+      }
+    </div>
+    } @else {
+    <p class="sa-muted">El candidato aún no ha capturado su ficha de registro.</p>
+    }
+    }
+
+    @if (activeTab() === 'documentos') {
+      <p class="sa-muted" style="margin-bottom:0.75rem">
+        Vista de solo lectura. Para validar, rechazar o ver la foto de perfil de este candidato, ve a
+        <strong>Usuarios</strong> y haz clic en su nombre.
+      </p>
+      @if (documentsLoading()) {
+      <p class="sa-muted">Cargando documentos…</p>
+      } @else if (!participantDocuments().length) {
+      <p class="sa-muted">Este candidato aún no ha subido documentos.</p>
+      } @else {
+      <div class="sa-doc-list">
+        @for (d of participantDocuments(); track d.id) {
+        <div class="sa-doc-item sa-doc-row">
+          <div class="sa-doc-info">
+            <span class="sa-doc-type">{{ docTypeLabel(d.type) }}</span>
+            <span class="sa-doc-name">{{ d.file_name }}</span>
+          </div>
+          <span class="sa-status" [attr.data-doc-status]="d.status">{{ docStatusLabel(d.status) }}</span>
+          <div class="sa-doc-actions">
+            <button type="button" class="sa-doc-btn" (click)="viewDocument(d)">Ver documento</button>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    }
+
+    @if (activeTab() === 'historial') {
+    <div class="sa-history">
+      @for (h of selected()!.history; track h.id) {
+      <div class="sa-history-item">
+        <span class="sa-history-action">{{ h.action }}</span>
+        <span class="sa-muted">{{ h.users?.full_name }} · {{ h.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      } @empty {
+      <p class="sa-muted">Sin movimientos registrados.</p>
+      }
+    </div>
+    }
+
+    @if (activeTab() === 'revision') {
+      @if (reviewFeedback()) { <div class="sa-feedback">{{ reviewFeedback() }}</div> }
+      @if (['pendiente','en_revision'].includes(selected()!.status)) {
+      <label class="sa-field">Motivo / observaciones (obligatorio para rechazar o solicitar corrección)
+        <textarea rows="3" [ngModel]="reviewReason()" (ngModelChange)="reviewReason.set($event)"></textarea>
+      </label>
+      <div class="sa-actions">
+        <button class="sa-btn danger" [disabled]="reviewBusy()" (click)="doReview('reject')">Rechazar</button>
+        <button class="sa-btn" [disabled]="reviewBusy()" (click)="doReview('request_correction')">Solicitar corrección</button>
+        <button class="sa-btn primary" [disabled]="reviewBusy()" (click)="doReview('approve')">Aprobar</button>
+      </div>
+      } @else {
+      <p class="sa-muted">Esta solicitud ya fue revisada (estado: {{ statusLabel(selected()!.status) }}).</p>
+      @if (selected()!.notes) { <p class="sa-notes">{{ selected()!.notes }}</p> }
+      }
+    }
+
+    @if (activeTab() === 'preparacion') {
+      @if (selected()!.status !== 'aprobada' && !selected()!.course_id) {
+      <p class="sa-muted">La solicitud debe estar aprobada antes de asignar curso/grupo.</p>
+      } @else {
+      @if (prepFeedback()) { <div class="sa-feedback">{{ prepFeedback() }}</div> }
+      <label class="sa-field">Curso (del estándar {{ selected()!.estandar?.codigo }})
+        <select [ngModel]="chosenCourseId()" (ngModelChange)="onCourseChange($event)">
+          <option value="">Selecciona un curso…</option>
+          @for (c of coursesForEstandar(); track c.id) {
+          <option [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+          }
+        </select>
+      </label>
+      @if (!coursesForEstandar().length) {
+      <div class="sa-inline-create">
+        <p class="sa-muted">No hay cursos configurados para este estándar todavía.</p>
+        <input type="text" placeholder="Nombre del curso" [ngModel]="newCourseName()" (ngModelChange)="newCourseName.set($event)">
+        <input type="text" placeholder="Código (ej: EC0217-C1)" [ngModel]="newCourseCode()" (ngModelChange)="newCourseCode.set($event)">
+        <button class="sa-btn" [disabled]="prepBusy()" (click)="createCourseForEstandar()">Crear curso</button>
+      </div>
+      }
+      @if (chosenCourseId()) {
+      <label class="sa-field">Grupo (opcional)
+        <select [ngModel]="chosenGroupId()" (ngModelChange)="chosenGroupId.set($event)">
+          <option value="">Sin grupo específico</option>
+          @for (g of groups(); track g.id) {
+          <option [value]="g.id">{{ g.name }}</option>
+          }
+        </select>
+      </label>
+      }
+      <button class="sa-btn primary" [disabled]="prepBusy() || !chosenCourseId()" (click)="savePreparacion()">Guardar preparación</button>
+      }
+    }
+
+    @if (activeTab() === 'evaluador') {
+      @if (!selected()!.course_id) {
+      <p class="sa-muted">Primero completa la preparación del curso.</p>
+      } @else if (selected()!.process) {
+      <p class="sa-muted">Esta solicitud ya tiene un proceso de certificación con evaluador asignado.</p>
+      } @else {
+      @if (evaluatorsLoading()) {
+      <p class="sa-muted">Buscando evaluadores calificados…</p>
+      } @else if (!qualifiedEvaluators().length) {
+      <div class="sa-warning">
+        No hay evaluadores calificados para este estándar. Un evaluador debe tener rol EVALUADOR, estar activo,
+        y contar con credencial de evaluador vigente + certificación vigente de este estándar.
+      </div>
+      } @else {
+      <div class="sa-evaluator-list">
+        @for (ev of qualifiedEvaluators(); track ev.evaluator_id) {
+        <label class="sa-evaluator-item">
+          <input type="radio" name="evaluador" [value]="ev.evaluator_id" [checked]="chosenEvaluatorId() === ev.evaluator_id" (change)="chosenEvaluatorId.set(ev.evaluator_id)">
+          <div>
+            <strong>{{ ev.full_name }}</strong>
+            <span class="sa-muted"> — {{ ev.email }}</span>
+          </div>
+        </label>
+        }
+      </div>
+      }
+      }
+    }
+
+    @if (activeTab() === 'confirmacion') {
+      @if (selected()!.process) {
+      <div class="sa-confirm-summary">
+        <p>El proceso de certificación ya fue creado — folio <strong>{{ selected()!.process!.folio }}</strong>.</p>
+        <button class="sa-btn primary" (click)="openProcessId.set(selected()!.process!.id)">Abrir expediente →</button>
+      </div>
+      } @else {
+      <div class="sa-confirm-summary">
+        <p><strong>Candidato:</strong> {{ selected()!.candidato?.full_name }}</p>
+        <p><strong>Estándar:</strong> {{ selected()!.estandar?.codigo }} — {{ selected()!.estandar?.nombre }}</p>
+        <p><strong>Curso:</strong> {{ selected()!.course_id ? 'Asignado' : 'Sin asignar' }}</p>
+        <p><strong>Evaluador seleccionado:</strong> {{ chosenEvaluatorId() ? 'Sí' : 'Ninguno — selecciónalo en la pestaña anterior' }}</p>
+      </div>
+      @if (confirmFeedback()) { <div class="sa-feedback">{{ confirmFeedback() }}</div> }
+      <button class="sa-btn primary" [disabled]="confirmBusy() || !chosenEvaluatorId() || !selected()!.course_id" (click)="createProcess()">
+        Crear proceso de certificación
+      </button>
+      }
+    }
+
+  </div>
+  }
+
+</div>

@@ -21,7 +21,9 @@
       </svg>
       <span>CertiApp</span>
     </a>
-    <div class="mobile-avatar" (click)="toggleMobileMenu()">{{ getInitial() }}</div>
+    <div class="mobile-avatar" (click)="toggleMobileMenu()">
+      @if (user?.avatar_url) { <img [src]="user!.avatar_url" alt="" class="avatar-img"> } @else { {{ getInitial() }} }
+    </div>
   </header>
 
   <!-- Mobile Backdrop Overlay -->
@@ -47,13 +49,17 @@
     </div>
 
     <div class="dash-user-card">
-      <div class="dash-avatar">{{ getInitial() }}</div>
+      <div class="dash-avatar">
+        @if (user?.avatar_url) { <img [src]="user!.avatar_url" alt="" class="avatar-img"> } @else { {{ getInitial() }} }
+      </div>
       <div class="dash-user-info">
         <span class="dash-user-name">{{ user?.full_name }}</span>
         <span class="dash-role-badge" [class]="role ?? ''">{{ getRoleLabel(role ?? '') }}</span>
       </div>
       @if (role === 'ADMIN') {
-      <app-notifications-bell (openSolicitudes)="setTab('solicitudes')"></app-notifications-bell>
+      <app-notifications-bell (openSolicitudes)="onOpenSolicitudFromNotification($event)"
+        (openUsuario)="onOpenUsuarioFromNotification($event)"
+        (openParticipantDocs)="onOpenParticipantDocsFromNotification($event)"></app-notifications-bell>
       }
     </div>
 
@@ -237,7 +243,28 @@
     <!-- ====== SOLICITUDES DE FICHA (admin) ====== -->
     @if (activeTab() === 'solicitudes') {
     <div class="dash-section">
-      <app-ficha-registro-admin></app-ficha-registro-admin>
+      <app-ficha-registro-admin [highlightId]="highlightFichaId()"></app-ficha-registro-admin>
+    </div>
+    }
+
+    <!-- ====== MI CERTIFICACIÓN (candidato) ====== -->
+    @if (activeTab() === 'mi-certificacion') {
+    <div class="dash-section">
+      <app-mi-certificacion></app-mi-certificacion>
+    </div>
+    }
+
+    <!-- ====== SOLICITUDES DE CERTIFICACIÓN (admin) ====== -->
+    @if (activeTab() === 'solicitudes-certificacion') {
+    <div class="dash-section">
+      <app-solicitudes-admin></app-solicitudes-admin>
+    </div>
+    }
+
+    <!-- ====== MIS PROCESOS (evaluador) ====== -->
+    @if (activeTab() === 'mis-procesos') {
+    <div class="dash-section">
+      <app-evaluador-procesos></app-evaluador-procesos>
     </div>
     }
 
@@ -248,7 +275,9 @@
 
       <!-- ── Hero / Banner del usuario ─────────────────────────────── -->
       <div class="profile-hero">
-        <div class="profile-hero-avatar">{{ getInitial() }}</div>
+        <div class="profile-hero-avatar">
+          @if (user?.avatar_url) { <img [src]="user!.avatar_url" alt="" class="avatar-img"> } @else { {{ getInitial() }} }
+        </div>
         <div class="profile-hero-info">
           <h1 class="profile-hero-name">{{ user?.full_name ?? '—' }}</h1>
           <div class="profile-hero-meta">
@@ -366,9 +395,9 @@
             @switch (activeProfileCard()) {
             @case ('datos') { Datos personales }
             @case ('contrasena') { Contraseña }
+            @case ('documentos') { 📄 Mis Documentos }
             @case ('cursos-disponibles') { 📚 Cursos disponibles }
             @case ('mis-cursos') { 📝 Mis Cursos y Formularios }
-            @case ('documentos') { 📄 Mis Documentos }
             @case ('certificados') { 🏅 Mis Certificados }
             }
           </span>
@@ -385,6 +414,58 @@
         @switch (activeProfileCard()) {
 
         @case ('datos') {
+        <div class="avatar-upload-block">
+          <div class="avatar-example-hint">
+            <img src="/avatar-example.png" alt="Ejemplo de foto de perfil válida" class="avatar-example-img">
+            <div class="avatar-example-text">
+              <strong>Así debe verse tu foto</strong>
+              <p>Rostro completo, de frente y centrado, con buena iluminación y fondo claro. Evita lentes oscuros,
+                gorras, filtros o que alguien más aparezca en la foto — nuestro sistema la revisa automáticamente
+                antes de subirla.</p>
+            </div>
+          </div>
+
+          <div class="avatar-upload-preview">
+            @if (user?.avatar_url) {
+              <img [src]="user!.avatar_url" alt="Foto de perfil" class="avatar-img">
+            } @else {
+              <span class="avatar-upload-placeholder">{{ getInitial() }}</span>
+            }
+          </div>
+          <div class="avatar-upload-actions">
+            <input #avatarFileInput type="file" accept="image/*" style="display:none"
+              (change)="onAvatarFileSelected($event)">
+            <button type="button" class="avatar-btn" [disabled]="avatarBusy() || faceCheckBusy()" (click)="avatarFileInput.click()">
+              Subir desde archivo
+            </button>
+            <button type="button" class="avatar-btn" [disabled]="avatarBusy() || faceCheckBusy()" (click)="openCamera()">
+              Usar cámara
+            </button>
+            @if (avatarBusy() || faceCheckBusy()) { <span class="avatar-upload-spinner"></span> }
+          </div>
+          @if (faceCheckBusy()) {
+          <div class="face-check-block busy">Analizando la foto…</div>
+          }
+          @if (faceCheckResult(); as check) {
+          <div class="face-check-block" [class.apta]="check.resultado.apta" [class.no-apta]="!check.resultado.apta">
+            <p class="face-check-motivo">{{ check.resultado.apta ? '✅' : '⚠️' }} {{ check.resultado.motivo }}</p>
+            @if (check.rostro.cantidad === 1) {
+            <ul class="face-check-list">
+              @for (m of [check.metrics.pose, check.metrics.tamano, check.metrics.posicion, check.metrics.oclusion, check.metrics.visibilidad]; track m.label) {
+              <li [class.ok]="m.ok" [class.fail]="!m.ok">
+                <span class="face-check-icon">{{ m.ok ? '✓' : '✗' }}</span>
+                <span><strong>{{ m.label }}</strong><small>{{ m.detail }}</small></span>
+              </li>
+              }
+            </ul>
+            }
+          </div>
+          }
+          @if (avatarFeedback()) {
+          <div class="avatar-feedback" [class.error]="avatarFeedbackIsError()">{{ avatarFeedback() }}</div>
+          }
+        </div>
+
         <div class="profile-info-grid">
           <div class="profile-info-item">
             <span class="profile-info-label">Nombre completo</span>
@@ -559,6 +640,31 @@
         @case ('documentos') {
         <p class="section-sub" style="margin-bottom:1rem">Sube tus documentos (identificación, comprobante de domicilio,
           etc.) para que el equipo los valide</p>
+
+        @if (myDocumentsLoadError()) {
+        <div class="doc-warning">
+          <strong>No se pudo cargar tu lista de documentos.</strong> {{ myDocumentsLoadError() }}
+          <button type="button" class="btn-small" (click)="loadMyDocuments()" style="margin-left:auto">Reintentar</button>
+        </div>
+        }
+
+        @if (missingRequiredDocTypes().length) {
+        <div class="doc-warning">
+          ⚠️ Te falta subir: {{ missingRequiredDocTypes().map(t => t.label).join(', ') }} (obligatorio).
+        </div>
+        }
+
+        <div class="doc-checklist">
+          @for (t of documentTypes; track t.value) {
+          <div class="doc-checklist-row">
+            <span class="doc-checklist-label">{{ t.label }}</span>
+            @if (t.requirement === 'required') { <span class="doc-req-badge required">Obligatorio</span> }
+            @else if (t.requirement === 'optional') { <span class="doc-req-badge optional">Opcional</span> }
+            <span class="doc-status-chip" [class]="docTypeUploadStatus(t.value)">{{ docTypeUploadStatusLabel(t.value) }}</span>
+          </div>
+          }
+        </div>
+
         <div class="doc-upload-row">
           <select [value]="selectedMyDocType()" (change)="selectedMyDocType.set($any($event.target).value)">
             @for (t of documentTypes; track t.value) {
@@ -605,9 +711,9 @@
             <div class="cert-card-info">
               <div class="cert-card-course">{{ c.courses?.name ?? 'Curso' }}</div>
               <div class="cert-card-folio">Folio: {{ c.folio }}</div>
-              <span class="status-chip" [class.uploaded]="c.status === 'active'"
-                [class.missing]="c.status !== 'active'">
-                {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
+              <span class="status-chip" [class.uploaded]="c.status === 'vigente'"
+                [class.missing]="c.status !== 'vigente'">
+                {{ c.status === 'vigente' ? 'Vigente' : (c.status === 'vencido' ? 'Vencido' : 'Revocado') }}
               </span>
             </div>
           </div>
@@ -631,6 +737,14 @@
         Todos los usuarios de la plataforma en un solo lugar. Filtra por rol o busca por nombre/correo.
       </p>
 
+      @if (usersLoadError()) {
+      <div class="users-load-error">
+        <strong>No se pudo cargar la lista de usuarios.</strong>
+        <span>{{ usersLoadError() }}</span>
+        <button type="button" class="btn-small" (click)="loadUsers()">Reintentar</button>
+      </div>
+      }
+
       <div class="users-toolbar">
         <div class="users-search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -641,7 +755,7 @@
             [value]="userSearchQuery()" (input)="userSearchQuery.set($any($event.target).value)">
         </div>
         <div class="users-role-filter">
-          @for (opt of userRoleFilterOptions; track opt.value) {
+          @for (opt of userRoleFilterOptions(); track opt.value) {
           <button type="button" class="role-filter-chip" [class.active]="userRoleFilter() === opt.value"
             (click)="userRoleFilter.set(opt.value)">{{ opt.label }}</button>
           }
@@ -664,10 +778,16 @@
             @for (u of filteredUsers(); track u.id) {
             <tr>
               <td>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div class="mini-avatar">{{ u.full_name.charAt(0).toUpperCase() }}</div>
+                <button type="button" class="user-row-name-btn" (click)="openUserDetail(u)" title="Ver detalle, foto y documentos">
+                  <div class="mini-avatar">
+                    @if (u.avatar_url) {
+                    <img [src]="u.avatar_url" alt="" class="mini-avatar-img">
+                    } @else {
+                    {{ u.full_name.charAt(0).toUpperCase() }}
+                    }
+                  </div>
                   {{ u.full_name }}
-                </div>
+                </button>
               </td>
               <td>{{ u.email }}</td>
               <td>
@@ -676,7 +796,7 @@
                 </span>
               </td>
               <td>
-                @if (auth.canManageUsers()) {
+                @if (auth.canManageUsers() && !isPeerAdminLocked(u)) {
                 <input type="text" class="institution-input" placeholder="Sin institución"
                   [value]="u.institution_name ?? ''" (change)="updateInstitutionName(u.id, $any($event.target).value)">
                 } @else {
@@ -691,7 +811,13 @@
               @if (auth.canManageUsers()) {
               <td>
                 <div class="action-btns">
-                  @if (u.id !== user?.id) {
+                  @if (u.id === user?.id) {
+                  <span class="self-badge">Tú</span>
+                  } @else if (isPeerAdminLocked(u)) {
+                  <span class="self-badge" title="Un administrador no puede modificar a otro administrador.">
+                    Protegido
+                  </span>
+                  } @else {
                   <button class="btn-small" (click)="toggleActive(u.id)">
                     {{ u.is_active ? 'Desactivar' : 'Activar' }}
                   </button>
@@ -709,8 +835,8 @@
                   <select class="role-select" [value]="u.role" (change)="changeRole(u.id, $any($event.target).value)">
                     <option value="CANDIDATO">Candidato</option>
                     <option value="EVALUADOR">Evaluador</option>
+                    @if (auth.isSuperAdmin()) {
                     <option value="ADMIN">Admin</option>
-                    @if (role === 'SUPER_ADMIN') {
                     <option value="SUPER_ADMIN">Super Admin</option>
                     }
                   </select>
@@ -720,8 +846,6 @@
                     Eliminar
                   </button>
                   }
-                  } @else {
-                  <span class="self-badge">Tú</span>
                   }
                 </div>
               </td>
@@ -729,7 +853,13 @@
             </tr>
             } @empty {
             <tr>
-              <td colspan="7" class="empty-row">No hay usuarios que coincidan con la búsqueda/filtro.</td>
+              <td colspan="7" class="empty-row">
+                @if (usersLoadError()) {
+                No se pudieron cargar los usuarios — revisa el mensaje de arriba.
+                } @else {
+                No hay usuarios que coincidan con la búsqueda/filtro.
+                }
+              </td>
             </tr>
             }
           </tbody>
@@ -766,13 +896,13 @@
               <td>{{ c.issued_at | date:'dd/MM/yyyy' }}</td>
               <td>{{ c.expires_at ? (c.expires_at | date:'dd/MM/yyyy') : 'Sin vencimiento' }}</td>
               <td>
-                <span class="status-chip" [class.uploaded]="c.status === 'active'"
-                  [class.missing]="c.status !== 'active'">
-                  {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
+                <span class="status-chip" [class.uploaded]="c.status === 'vigente'"
+                  [class.missing]="c.status !== 'vigente'">
+                  {{ c.status === 'vigente' ? 'Vigente' : (c.status === 'vencido' ? 'Vencido' : 'Revocado') }}
                 </span>
               </td>
               <td>
-                @if (c.status === 'active') {
+                @if (c.status === 'vigente') {
                 <button class="btn-small danger" [disabled]="revokingCertId() === c.id" (click)="revokeCertificate(c)">
                   {{ revokingCertId() === c.id ? 'Revocando…' : 'Revocar' }}
                 </button>
@@ -792,17 +922,7 @@
     </div>
     }
 
-    <!-- ====== GRUPOS / REPORTES — placeholders ====== -->
-    @if (activeTab() === 'grupos') {
-    <div class="dash-section">
-      <h2 class="section-h2">Grupos</h2>
-      <div class="empty-state"><span>📋</span>
-        <p>Los grupos se gestionan dentro de cada curso. Ve a la sección <strong>Cursos</strong> y selecciona un curso
-          para ver sus grupos.</p>
-        <button class="btn-small" (click)="setTab('cursos')">Ir a Cursos →</button>
-      </div>
-    </div>
-    }
+    <!-- ====== REPORTES — placeholder ====== -->
     @if (activeTab() === 'reportes') {
     <div class="dash-section">
       <h2 class="section-h2">Reportes</h2>
@@ -939,15 +1059,29 @@
       <div class="cert-add-form">
         <h4>Agregar certificación</h4>
         <div class="cert-add-row">
-          <select [value]="newCertType()" (change)="newCertType.set($any($event.target).value)">
+          <select [value]="newCertType()" (change)="newCertType.set($any($event.target).value); newCertEstandar.set(null); newCertCode.set('')">
             <option value="EVALUATOR_CREDENTIAL">Credencial de evaluador</option>
             <option value="STANDARD">Certificación de estándar/curso</option>
           </select>
-          @if (newCertType() === 'STANDARD') {
-          <input type="text" placeholder="Código (ej: EC0217)" [value]="newCertCode()"
-            (input)="newCertCode.set($any($event.target).value)">
+        </div>
+        @if (newCertType() === 'STANDARD') {
+        <div class="cert-add-row">
+          @if (newCertEstandar()) {
+          <div class="cert-selected-estandar">
+            <span class="cert-code">{{ newCertEstandar()!.codigo }}</span>
+            <span class="cert-name">{{ newCertEstandar()!.nombre }}</span>
+            <button type="button" class="btn-small" (click)="showEstandarPicker.set(true); newCertEstandar.set(null)">Cambiar</button>
+          </div>
+          } @else {
+          <button type="button" class="btn-small" (click)="showEstandarPicker.set(true)">Seleccionar estándar…</button>
           }
         </div>
+        @if (showEstandarPicker()) {
+        <div class="cert-add-row">
+          <app-estandar-picker (selected)="onEstandarPicked($event)"></app-estandar-picker>
+        </div>
+        }
+        }
         <div class="cert-add-row">
           <input type="text" placeholder="Nombre (opcional)" [value]="newCertName()"
             (input)="newCertName.set($any($event.target).value)">
@@ -995,4 +1129,65 @@
     </div>
   </div>
 </div>
+}
+<!-- Modal: Tomar foto de perfil con la cámara -->
+@if (showCameraModal()) {
+<div class="camera-modal-backdrop" (click)="closeCamera()">
+  <div class="camera-modal-box" (click)="$event.stopPropagation()">
+    <div class="camera-modal-header">
+      <h3>Tomar foto</h3>
+      <button class="modal-close" (click)="closeCamera()">×</button>
+    </div>
+
+    @if (cameraError()) {
+      <div class="avatar-feedback error">{{ cameraError() }}</div>
+    }
+
+    @if (!capturedPhoto()) {
+      <video #cameraVideo autoplay playsinline muted class="camera-video"></video>
+      <div class="camera-modal-actions">
+        <button type="button" class="avatar-btn" (click)="closeCamera()">Cancelar</button>
+        <button type="button" class="avatar-btn primary" [disabled]="!cameraReady()" (click)="capturePhoto()">Capturar</button>
+      </div>
+    } @else {
+      <img [src]="capturedPhoto()" alt="Foto capturada" class="camera-preview-img">
+
+      @if (faceCheckBusy()) {
+      <div class="face-check-block busy">Analizando la foto…</div>
+      }
+      @if (faceCheckResult(); as check) {
+      <div class="face-check-block" [class.apta]="check.resultado.apta" [class.no-apta]="!check.resultado.apta">
+        <p class="face-check-motivo">{{ check.resultado.apta ? '✅' : '⚠️' }} {{ check.resultado.motivo }}</p>
+        @if (check.rostro.cantidad === 1) {
+        <ul class="face-check-list">
+          @for (m of [check.metrics.pose, check.metrics.tamano, check.metrics.posicion, check.metrics.oclusion, check.metrics.visibilidad]; track m.label) {
+          <li [class.ok]="m.ok" [class.fail]="!m.ok">
+            <span class="face-check-icon">{{ m.ok ? '✓' : '✗' }}</span>
+            <span><strong>{{ m.label }}</strong><small>{{ m.detail }}</small></span>
+          </li>
+          }
+        </ul>
+        }
+      </div>
+      }
+      @if (avatarFeedback()) {
+      <div class="avatar-feedback" [class.error]="avatarFeedbackIsError()">{{ avatarFeedback() }}</div>
+      }
+
+      <div class="camera-modal-actions">
+        <button type="button" class="avatar-btn" [disabled]="avatarBusy() || faceCheckBusy()" (click)="retakePhoto()">Repetir</button>
+        <button type="button" class="avatar-btn primary" [disabled]="avatarBusy() || faceCheckBusy()" (click)="confirmCapturedPhoto()">
+          {{ faceCheckBusy() ? 'Analizando…' : (avatarBusy() ? 'Subiendo…' : 'Usar esta foto') }}
+        </button>
+      </div>
+    }
+
+    <canvas #cameraCanvas style="display:none"></canvas>
+  </div>
+</div>
+}
+
+<!-- Modal: detalle de usuario (foto de perfil + documentos) -->
+@if (selectedUserForDetail(); as detailUser) {
+<app-user-detail-modal [user]="detailUser" (closed)="closeUserDetail()" (changed)="onUserDetailChanged()"></app-user-detail-modal>
 }

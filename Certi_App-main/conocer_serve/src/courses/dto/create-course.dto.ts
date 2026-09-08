@@ -1,6 +1,6 @@
 import {
-  IsString, IsOptional, IsUUID, IsNumber, IsInt,
-  Min, Max, MinLength,
+  IsString, IsOptional, IsUUID, IsNumber,
+  Min, MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -17,18 +17,14 @@ export class CreateCourseDto {
   @IsOptional() @IsUUID()
   program_id?: string;
 
-  @IsOptional() @IsUUID()
-  estandar_id?: string;
+  @IsUUID()
+  estandar_id: string;
 
-  @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+  // `courses_duration_hours_check` en la base de datos exige una duración
+  // positiva (0 no es válido para un curso real).
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
   duration_hours?: number;
 
-  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100)
-  passing_grade?: number;
-
-  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100)
-  min_attendance?: number;
-
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
-  validity_months?: number;
+  @IsOptional() @IsString()
+  modality?: string;
 }

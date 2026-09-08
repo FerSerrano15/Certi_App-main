@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { CertificatesController } from './certificates.controller';
 import { CertificatesService } from './certificates.service';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { ParticipantsModule } from '../participants/participants.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { CertificationProcessModule } from '../certification-process/certification-process.module';
 
 @Module({
-  imports: [SupabaseModule, ParticipantsModule],
+  imports: [SupabaseModule, AuditLogsModule, CertificationProcessModule],
   controllers: [CertificatesController],
   providers: [CertificatesService],
   exports: [CertificatesService],

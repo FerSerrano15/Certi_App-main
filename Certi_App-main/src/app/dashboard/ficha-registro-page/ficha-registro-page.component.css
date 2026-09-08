@@ -305,6 +305,11 @@ textarea.fr-input { resize: vertical; min-height: 80px; }
   font-weight: 500;
 }
 
+.fr-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
 /* ── Radio / Checkbox ───────────────────────────────────────────────────── */
 .fr-radio-group,
 .fr-check-group {

@@ -26,6 +26,13 @@ export class ParticipantsController {
     return this.svc.getEligibleForGroup(groupId, req.user);
   }
 
+  // Debe ir ANTES de @Get(':id') — si no, Nest intenta interpretar "by-user"
+  // como si fuera un :id y ParseUUIDPipe lo rechaza con 400.
+  @Get('by-user/:userId')
+  findByUser(@Param('userId', ParseUUIDPipe) userId: string, @Request() req: Req) {
+    return this.svc.findByUserId(userId, req.user);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
     return this.svc.getParticipant(id, req.user);

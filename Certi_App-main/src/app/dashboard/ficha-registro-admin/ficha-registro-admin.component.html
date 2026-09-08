@@ -44,7 +44,7 @@
         </thead>
         <tbody>
           @for (f of filtered(); track f.id) {
-            <tr>
+            <tr [id]="'ficha-row-' + f.id" [class.fa-row-highlight]="highlighted() === f.id">
               <td>
                 <div class="fa-candidato">
                   <span class="fa-candidato-nombre">{{ f.users?.full_name ?? '—' }}</span>
@@ -64,8 +64,8 @@
                   [disabled]="updatingId() === f.id"
                   (change)="changeStatus(f, $any($event.target).value)"
                 >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="aprobada">Aprobada</option>
+                  <option value="enviada" disabled>Enviada</option>
+                  <option value="validada">Validada</option>
                   <option value="rechazada">Rechazada</option>
                 </select>
               </td>

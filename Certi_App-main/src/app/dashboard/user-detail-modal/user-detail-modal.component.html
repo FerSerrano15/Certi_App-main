@@ -1,0 +1,83 @@
+<div class="udm-backdrop" (click)="closed.emit()">
+  <div class="udm-box" (click)="$event.stopPropagation()">
+    <div class="udm-header">
+      <h3>{{ user().full_name }}</h3>
+      <button class="modal-close" (click)="closed.emit()">×</button>
+    </div>
+
+    <div class="udm-body">
+
+      <div class="udm-info-grid">
+        <div><span class="udm-label">Correo</span><span>{{ user().email }}</span></div>
+        <div><span class="udm-label">Teléfono</span><span>{{ user().phone ?? '—' }}</span></div>
+        <div><span class="udm-label">Institución</span><span>{{ user().institution_name ?? '—' }}</span></div>
+        <div><span class="udm-label">Estado de la cuenta</span><span>{{ user().is_active ? 'Activo' : 'Inactivo' }}</span></div>
+      </div>
+
+      @if (locked()) {
+      <p class="udm-locked-notice">
+        No puedes revisar la foto ni los documentos de otro administrador — esta vista es solo informativa.
+      </p>
+      }
+
+      <!-- ── Foto de perfil ──────────────────────────────────────────── -->
+      <h4 class="udm-subtitle">Foto de perfil</h4>
+      @if (user().avatar_url) {
+      <div class="udm-avatar-review">
+        <img [src]="user().avatar_url" class="udm-avatar-img" alt="Foto de perfil">
+        <div class="udm-avatar-side">
+          <span class="udm-status" [attr.data-doc-status]="user().avatar_status ?? 'pending'">{{ avatarStatusLabel() }}</span>
+          @if (!locked()) {
+          <div class="udm-avatar-actions">
+            <button class="udm-btn primary" [disabled]="avatarActionBusy()" (click)="validateAvatar()">Validar foto</button>
+            <button class="udm-btn danger" [disabled]="avatarActionBusy()" (click)="rejectAvatar()">Rechazar foto</button>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <p class="udm-muted">Este usuario no ha subido foto de perfil.</p>
+      }
+
+      <!-- ── Documentos ───────────────────────────────────────────────── -->
+      <h4 class="udm-subtitle">Documentos</h4>
+      @if (participantLoading()) {
+      <p class="udm-muted">Cargando…</p>
+      } @else if (!participant()) {
+      <p class="udm-muted">Este usuario aún no tiene expediente de participante (no ha llenado una ficha ni generado una solicitud), así que no hay documentos que revisar todavía.</p>
+      } @else if (documentsLoading()) {
+      <p class="udm-muted">Cargando documentos…</p>
+      } @else if (!documents().length) {
+      <p class="udm-muted">Aún no ha subido documentos.</p>
+      } @else {
+      <div class="udm-doc-list">
+        @for (d of documents(); track d.id) {
+        <div class="udm-doc-row">
+          <div class="udm-doc-info">
+            <span class="udm-doc-type">{{ docTypeLabel(d.type) }}</span>
+            <span class="udm-doc-name">{{ d.file_name }}</span>
+          </div>
+          <span class="udm-status" [attr.data-doc-status]="d.status">{{ docStatusLabel(d.status) }}</span>
+          @if (!locked()) {
+          <div class="udm-doc-actions">
+            <button type="button" class="udm-btn" (click)="viewDocument(d)">Ver</button>
+            @if (d.status !== 'validated') {
+            <button type="button" class="udm-btn primary" [disabled]="docActionBusyId() === d.id"
+              (click)="validateDocument(d)">Validar</button>
+            }
+            @if (d.status !== 'rejected') {
+            <button type="button" class="udm-btn danger" [disabled]="docActionBusyId() === d.id"
+              (click)="rejectDocument(d)">Rechazar</button>
+            }
+          </div>
+          } @else {
+          <button type="button" class="udm-btn" (click)="viewDocument(d)">Ver</button>
+          }
+        </div>
+        }
+      </div>
+      }
+
+    </div>
+  </div>
+</div>

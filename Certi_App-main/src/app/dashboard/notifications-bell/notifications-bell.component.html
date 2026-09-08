@@ -28,7 +28,7 @@
                 <span class="nb-item-date">{{ n.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
               </div>
               <div class="nb-item-actions">
-                <button class="nb-item-btn" (click)="verSolicitud(n, $event)">Ver solicitud</button>
+                <button class="nb-item-btn" (click)="handleAction(n, $event)">{{ actionLabel(n) }}</button>
                 @if (!n.read) {
                   <button class="nb-item-btn ghost" (click)="markRead(n, $event)">Marcar leída</button>
                 }

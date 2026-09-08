@@ -44,7 +44,7 @@ export class PdfController {
   ) {
     const { data: ficha, error } = await this.supabase.admin
       .from('fichas_registro')
-      .select('user_id, estandar_codigo, estandar_nombre, form_data, submitted_at, users ( full_name )')
+      .select('user_id, estandar_codigo, estandar_nombre, form_data, submitted_at, users!user_id ( full_name )')
       .eq('id', fichaId)
       .single<{
         user_id: string;

@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import {
   EstandaresService, Estandar, GuiaObservacion, Reactivo,
@@ -16,6 +17,7 @@ type View = 'list' | 'detail';
 })
 export class EstandaresComponent implements OnInit {
   private readonly svc = inject(EstandaresService);
+  private readonly confirmSvc = inject(ConfirmDialogService);
   private readonly fb = inject(FormBuilder);
 
   // ─── State ───────────────────────────────────────────────────────────────
@@ -166,7 +168,12 @@ export class EstandaresComponent implements OnInit {
 
   async deleteEstandar(e: Estandar, ev: Event) {
     ev.stopPropagation();
-    if (!confirm(`¿Eliminar el estándar "${e.codigo}"? Se eliminarán también sus guías y reactivos.`)) return;
+    const ok1 = await this.confirmSvc.ask({
+      title: 'Eliminar estándar',
+      message: `¿Eliminar el estándar "${e.codigo}"? Se eliminarán también sus guías y reactivos.`,
+      detail: `Se perderán permanentemente todas las guías de observación y reactivos del estándar "${e.codigo}", junto con cualquier evaluación que dependa de ellos. Esta acción no se puede deshacer.`,
+    });
+    if (!ok1) return;
     const ok = await this.svc.remove(e.id);
     if (ok) {
       this.showToast('Estándar eliminado.');
@@ -214,7 +221,12 @@ export class EstandaresComponent implements OnInit {
   }
 
   async deleteGuia(g: GuiaObservacion) {
-    if (!confirm(`¿Eliminar "${g.titulo}"? Se eliminarán también sus reactivos.`)) return;
+    const ok1 = await this.confirmSvc.ask({
+      title: 'Eliminar guía de observación',
+      message: `¿Eliminar "${g.titulo}"? Se eliminarán también sus reactivos.`,
+      detail: 'Se perderán permanentemente todos los reactivos de esta guía. Esta acción no se puede deshacer.',
+    });
+    if (!ok1) return;
     const ok = await this.svc.removeGuia(g.id);
     if (ok) {
       this.showToast('Guía eliminada.');
@@ -269,7 +281,11 @@ export class EstandaresComponent implements OnInit {
   }
 
   async deleteReactivo(r: Reactivo) {
-    if (!confirm(`¿Eliminar el reactivo "${r.codigo_reactivo}"?`)) return;
+    const ok1 = await this.confirmSvc.ask({
+      title: 'Eliminar reactivo',
+      message: `¿Eliminar el reactivo "${r.codigo_reactivo}"?`,
+    });
+    if (!ok1) return;
     const ok = await this.svc.removeReactivo(r.id);
     if (ok) {
       this.showToast('Reactivo eliminado.');

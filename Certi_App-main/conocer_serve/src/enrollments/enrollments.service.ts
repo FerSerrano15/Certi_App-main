@@ -53,7 +53,7 @@ export class EnrollmentsService {
       .select(`
         *,
         participants ( id, full_name, email, national_id, phone ),
-        groups ( id, name, courses ( id, name, code, passing_grade, min_attendance ) )
+        groups ( id, name, courses ( id, name, code ) )
       `)
       .eq('id', id)
       .single();
@@ -78,7 +78,7 @@ export class EnrollmentsService {
       .eq('id', groupId)
       .single<{ id: string; status: string }>();
     if (groupErr || !group) throw new NotFoundException('Grupo no encontrado.');
-    if (['FINALIZADO', 'CANCELADO'].includes(group.status)) {
+    if (group.status !== 'abierto') {
       throw new ConflictException('Este grupo ya no acepta inscripciones.');
     }
 

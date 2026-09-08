@@ -9,6 +9,7 @@ export interface AuditLogEntry {
   entity?: string;
   entityid?: string;
   metadata?: Record<string, unknown>;
+  old_data?: Record<string, unknown> | null;
   ip?: string | null;
 }
 
@@ -23,13 +24,18 @@ export class AuditLogsService {
 
   async log(entry: AuditLogEntry): Promise<void> {
     try {
+      // NOTA: la tabla real en Supabase usa entity_type/entity_id/new_data/
+      // ip_address (no entity/entityid/metadata/ip) — se mapea aquí para no
+      // tener que tocar los ~15 call sites existentes que usan los nombres
+      // "amigables" del AuditLogEntry.
       const { error } = await this.supabase.admin.from('audit_logs').insert({
         user_id: entry.user_id ?? null,
         action: entry.action,
-        entity: entry.entity ?? null,
-        entityid: entry.entityid ?? null,
-        metadata: entry.metadata ?? null,
-        ip: entry.ip ?? null,
+        entity_type: entry.entity ?? null,
+        entity_id: entry.entityid ?? null,
+        old_data: entry.old_data ?? null,
+        new_data: entry.metadata ?? null,
+        ip_address: entry.ip ?? null,
       });
       if (error) console.error('[AuditLogsService] Error al registrar auditoría:', error.message);
     } catch (err) {

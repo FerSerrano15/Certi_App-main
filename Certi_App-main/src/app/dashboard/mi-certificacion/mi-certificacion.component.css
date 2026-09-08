@@ -1,0 +1,75 @@
+.mc-wrap { font-family: 'Inter', sans-serif; max-width: 860px; margin: 0 auto; }
+.mc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.mc-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0; }
+.mc-sub { font-size: 0.88rem; color: #64748b; margin: 0.25rem 0 0; }
+.mc-new-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #2dd4bf, #0d9488);
+  color: #fff; border: none; border-radius: 12px; padding: 0.7rem 1.25rem; font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.mc-new-btn:hover { filter: brightness(1.05); }
+.mc-back-btn {
+  background: none; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.55rem 1rem;
+  font-size: 0.85rem; font-weight: 600; color: #334155; cursor: pointer; margin-bottom: 1rem;
+}
+.mc-muted { color: #94a3b8; font-size: 0.85rem; }
+.mc-feedback {
+  background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 10px;
+  padding: 0.6rem 1rem; font-size: 0.85rem; margin-bottom: 1rem;
+}
+.mc-empty {
+  background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 3rem 1.5rem;
+  text-align: center; color: #64748b;
+}
+.mc-empty h3 { font-size: 1.05rem; color: #0f172a; margin: 0 0 0.4rem; }
+.mc-empty p { font-size: 0.85rem; margin: 0 0 1.25rem; }
+
+.mc-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.mc-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.25rem; flex-wrap: wrap;
+}
+.mc-card-body { display: flex; flex-direction: column; gap: 0.15rem; }
+.mc-card-codigo { font-size: 0.78rem; font-weight: 800; color: #0d9488; letter-spacing: 0.02em; }
+.mc-card-nombre { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.mc-card-date { font-size: 0.78rem; color: #94a3b8; }
+.mc-card-btn {
+  background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.55rem 1rem;
+  font-size: 0.82rem; font-weight: 700; color: #0f172a; cursor: pointer; white-space: nowrap;
+}
+.mc-card-btn:hover { background: #e2e8f0; }
+
+.mc-status {
+  font-size: 0.72rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap;
+  color: #64748b; background: #f1f5f9;
+}
+.mc-status[data-status="pendiente"], .mc-status[data-status="en_revision"] { color: #b45309; background: #fffbeb; }
+.mc-status[data-status="aprobada"], .mc-status[data-status="completada"] { color: #047857; background: #ecfdf5; }
+.mc-status[data-status="rechazada"], .mc-status[data-status="cancelada"] { color: #b91c1c; background: #fef2f2; }
+
+.mc-new-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
+.mc-new-panel h3 { margin: 0 0 1rem; font-size: 1.05rem; color: #0f172a; }
+
+.mc-detail { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
+.mc-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.mc-detail-header h3 { margin: 0; font-size: 1.1rem; color: #0f172a; }
+.mc-codigo { color: #0d9488; }
+.mc-notes {
+  background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px;
+  padding: 0.75rem 1rem; font-size: 0.85rem; margin: 1rem 0;
+}
+.mc-process-cta {
+  background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 1rem; margin: 1rem 0;
+}
+.mc-process-cta p { margin: 0 0 0.75rem; font-size: 0.88rem; color: #0f172a; }
+.mc-detail h4 { margin: 1.25rem 0 0.5rem; font-size: 0.9rem; color: #0f172a; }
+.mc-history { display: flex; flex-direction: column; gap: 0.4rem; }
+.mc-history-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  background: #f8fafc; border-radius: 8px; padding: 0.5rem 0.85rem; font-size: 0.8rem;
+}
+.mc-history-action { font-weight: 600; color: #334155; }
+.mc-cancel-btn {
+  margin-top: 1.25rem; background: #fef2f2; color: #b91c1c; border: 1.5px solid #fca5a5;
+  border-radius: 10px; padding: 0.6rem 1.1rem; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+}

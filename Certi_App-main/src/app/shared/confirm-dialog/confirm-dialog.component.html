@@ -1,0 +1,39 @@
+@if (svc.state(); as s) {
+<div class="cd-backdrop" (click)="svc.cancel()">
+  <div class="cd-box" [class.cd-box-danger]="s.step === 2" (click)="$event.stopPropagation()">
+
+    @if (s.step === 1) {
+      <!-- Paso 1: mensaje de la acción -->
+      <div class="cd-icon cd-icon-warn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="cd-title">{{ s.title }}</h3>
+      <p class="cd-message">{{ s.message }}</p>
+      <div class="cd-actions">
+        <button type="button" class="cd-btn cd-btn-cancel" (click)="svc.cancel()">{{ s.cancelText ?? 'Cancelar' }}</button>
+        <button type="button" class="cd-btn cd-btn-continue" (click)="svc.advance()">Continuar</button>
+      </div>
+    } @else {
+      <!-- Paso 2: confirmación final, tono de advertencia -->
+      <div class="cd-icon cd-icon-danger">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <h3 class="cd-title">¿Estás totalmente seguro?</h3>
+      <p class="cd-message">{{ s.detail ?? 'Esta acción no se puede deshacer.' }}</p>
+      <div class="cd-actions">
+        <button type="button" class="cd-btn cd-btn-cancel" (click)="svc.cancel()">{{ s.cancelText ?? 'Cancelar' }}</button>
+        <button type="button" class="cd-btn cd-btn-danger" (click)="svc.confirm()">{{ s.confirmText ?? 'Sí, eliminar' }}</button>
+      </div>
+    }
+
+  </div>
+</div>
+}

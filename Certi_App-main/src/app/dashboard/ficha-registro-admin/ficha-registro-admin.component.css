@@ -102,8 +102,8 @@
   cursor: pointer;
   background: #f8fafc;
 }
-.fa-status-select.status-pendiente { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
-.fa-status-select.status-aprobada  { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
+.fa-status-select.status-enviada   { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+.fa-status-select.status-validada  { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
 .fa-status-select.status-rechazada { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
 
 .fa-btn {
@@ -119,3 +119,11 @@
 }
 .fa-btn:hover { background: #e2e8f0; }
 .fa-btn:disabled { opacity: 0.6; cursor: default; }
+
+.fa-row-highlight {
+  animation: fa-highlight-flash 2s ease-out 2;
+}
+@keyframes fa-highlight-flash {
+  0%   { background-color: #d1fae5; }
+  100% { background-color: transparent; }
+}

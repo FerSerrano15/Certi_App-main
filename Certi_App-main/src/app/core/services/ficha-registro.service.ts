@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 
-export type FichaRegistroStatus = 'pendiente' | 'aprobada' | 'rechazada';
+export type FichaRegistroStatus = 'borrador' | 'enviada' | 'validada' | 'rechazada';
 
 export interface FichaRegistro {
   id: string;
@@ -52,7 +52,7 @@ export class FichaRegistroService {
     catch { return []; }
   }
 
-  async updateStatus(id: string, status: FichaRegistroStatus): Promise<boolean> {
+  async updateStatus(id: string, status: 'validada' | 'rechazada'): Promise<boolean> {
     try { await firstValueFrom(this.api.patch(`/ficha-registro/${id}/status`, { status }, this.token())); return true; }
     catch { return false; }
   }

@@ -36,6 +36,21 @@ export class FichaRegistroService {
     }
 
     // 2. Insertar la ficha
+    // La tabla real no tiene UNIQUE(user_id, estandar_id) a nivel de BD, así
+    // que la regla de negocio "una ficha por estándar" se valida aquí.
+    const { data: existing } = await client
+      .from('fichas_registro')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('estandar_id', estandar.id)
+      .maybeSingle();
+    if (existing) {
+      throw new ConflictException('Ya tienes una ficha registrada para este estándar.');
+    }
+
+    // status real: 'borrador' | 'enviada' | 'validada' | 'rechazada' (NOT NULL,
+    // sin default) — se envía directo en 'enviada' porque el candidato la
+    // manda de una vez desde el formulario.
     const { data, error } = await client
       .from('fichas_registro')
       .insert({
@@ -44,15 +59,13 @@ export class FichaRegistroService {
         estandar_codigo: estandar.codigo,
         estandar_nombre: estandar.nombre,
         form_data: dto.form_data,
+        status: 'enviada',
         submitted_at: new Date().toISOString(),
       })
       .select('*')
       .single();
 
     if (error) {
-      if (error.code === '23505') {
-        throw new ConflictException('Ya tienes una ficha registrada para este estándar.');
-      }
       throw new InternalServerErrorException('No se pudo guardar la ficha de registro: ' + error.message);
     }
 
@@ -131,7 +144,7 @@ export class FichaRegistroService {
 
     const { data, error } = await this.supabase.admin
       .from('fichas_registro')
-      .select('id, user_id, estandar_id, estandar_codigo, estandar_nombre, status, submitted_at, created_at, users ( full_name, email )')
+      .select('id, user_id, estandar_id, estandar_codigo, estandar_nombre, status, submitted_at, created_at, users!user_id ( full_name, email )')
       .order('submitted_at', { ascending: false });
 
     if (error) throw new InternalServerErrorException(error.message);
@@ -141,12 +154,12 @@ export class FichaRegistroService {
   // ──────────────────────────────────────────────────────────────────────────
   // PATCH estado de una ficha — solo admin
   // ──────────────────────────────────────────────────────────────────────────
-  async updateStatus(id: string, status: 'pendiente' | 'aprobada' | 'rechazada', requester: { id: string; role: string }) {
+  async updateStatus(id: string, status: 'validada' | 'rechazada', requester: { id: string; role: string }) {
     this.requireAdmin(requester.role);
 
     const { data, error } = await this.supabase.admin
       .from('fichas_registro')
-      .update({ status })
+      .update({ status, validated_by: requester.id, validated_at: new Date().toISOString() })
       .eq('id', id)
       .select('*')
       .single();

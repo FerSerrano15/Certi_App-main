@@ -70,6 +70,12 @@ export class ParticipantsService {
     catch { return null; }
   }
 
+  /** Busca el expediente de participante ligado a una cuenta de usuario (para el detalle en Usuarios). */
+  async getByUserId(userId: string): Promise<Participant | null> {
+    try { return await firstValueFrom(this.api.get<Participant | null>(`/participants/by-user/${userId}`, this.token())); }
+    catch { return null; }
+  }
+
   async updateParticipant(id: string, data: Partial<Participant>): Promise<Participant | null> {
     try { return await firstValueFrom(this.api.patch<Participant>(`/participants/${id}`, data, this.token())); }
     catch { return null; }

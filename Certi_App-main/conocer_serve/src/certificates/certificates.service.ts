@@ -8,124 +8,185 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import * as QRCode from 'qrcode';
 import { SupabaseService } from '../supabase/supabase.service';
-import { ParticipantsService } from '../participants/participants.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { CertificationProcessService, JwtUser } from '../certification-process/certification-process.service';
+import { StagesService } from '../certification-process/stages.service';
+import { CreateCertificateRequestDto } from './dto/create-certificate-request.dto';
+import { ReviewCertificateRequestDto } from './dto/review-certificate-request.dto';
 
-type JwtUser = { id: string; role: string; email: string };
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
+/**
+ * Trámite y emisión del certificado (pasos 18-19 del flujo). En la base real,
+ * un certificado SIEMPRE nace de un certificate_request aprobado, y un
+ * certificate_request SIEMPRE está ligado a un certification_process cuyo
+ * dictamen (process_judgments.result) debe ser 'competente' — es la barrera
+ * que bloquea emitir un certificado con juicio 'aun_no_competente'.
+ */
 @Injectable()
 export class CertificatesService {
   constructor(
     private readonly supabase: SupabaseService,
-    private readonly participants: ParticipantsService,
     private readonly auditLogs: AuditLogsService,
     private readonly config: ConfigService,
+    private readonly processes: CertificationProcessService,
+    private readonly stages: StagesService,
   ) {}
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+    if (!ADMIN_ROLES.includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  EMITIR
+  //  TRÁMITE — certificate_requests
   // ════════════════════════════════════════════════════════════════════════════
 
-  async issue(enrollmentId: string, force: boolean, user: JwtUser) {
+  async createRequest(dto: CreateCertificateRequestDto, user: JwtUser) {
     this.requireAdmin(user);
 
-    const { data: enrollment, error: enrErr } = await this.supabase.admin
-      .from('enrollments')
-      .select(`
-        id, group_id, participant_id, final_grade, attendance_percentage, status,
-        groups ( id, course_id, courses ( id, name, code, passing_grade, min_attendance, validity_months ) )
-      `)
-      .eq('id', enrollmentId)
-      .single<{
-        id: string; group_id: string; participant_id: string;
-        final_grade: number | null; attendance_percentage: number | null; status: string;
-        groups: {
-          id: string; course_id: string;
-          courses: {
-            id: string; name: string; code: string;
-            passing_grade: number; min_attendance: number; validity_months: number | null;
-          } | null;
-        } | null;
-      }>();
-    if (enrErr || !enrollment) throw new NotFoundException('Inscripción no encontrada.');
+    const process = await this.processes.getProcessRaw(dto.process_id);
+    const { data: judgment } = await this.supabase.admin
+      .from('process_judgments').select('result').eq('process_id', dto.process_id).maybeSingle();
 
-    const group = enrollment.groups;
-    const course = group?.courses;
-    if (!group || !course) throw new NotFoundException('No se pudo determinar el curso de esta inscripción.');
-
-    // ¿Ya existe un certificado activo para esta inscripción?
-    const { data: existing } = await this.supabase.admin
-      .from('certificates')
-      .select('*')
-      .eq('enrollment_id', enrollmentId)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (existing) return existing;
-
-    if (!force) {
-      const grade = enrollment.final_grade ?? 0;
-      const attendance = enrollment.attendance_percentage ?? 0;
-      if (grade < course.passing_grade) {
-        throw new ConflictException(
-          `La calificación final (${grade}) no alcanza el mínimo requerido (${course.passing_grade}). Envía "force: true" para emitir de todas formas.`,
-        );
-      }
-      if (attendance < course.min_attendance) {
-        throw new ConflictException(
-          `La asistencia (${attendance}%) no alcanza el mínimo requerido (${course.min_attendance}%). Envía "force: true" para emitir de todas formas.`,
-        );
-      }
+    if (!judgment || judgment.result !== 'competente') {
+      throw new ConflictException(
+        'No se puede iniciar el trámite de certificado: el juicio del proceso debe ser "competente" (o aún no se ha emitido).',
+      );
+    }
+    if (process.status === 'CANCELADO') {
+      throw new ConflictException('Este proceso está cancelado.');
     }
 
-    const folio = await this.generateUniqueFolio(course.code);
-    const verificationToken = crypto.randomBytes(24).toString('hex');
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4200';
-    const verificationUrl = `${frontendUrl}/verificar/${verificationToken}`;
-    const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 320 });
-
-    const issuedAt = new Date();
-    const expiresAt = course.validity_months
-      ? new Date(issuedAt.getFullYear(), issuedAt.getMonth() + course.validity_months, issuedAt.getDate())
-      : null;
+    const { data: existing } = await this.supabase.admin
+      .from('certificate_requests').select('id, status').eq('process_id', dto.process_id).maybeSingle();
+    if (existing) {
+      throw new ConflictException(`Ya existe un trámite de certificado para este proceso (estado: ${existing.status}).`);
+    }
 
     const { data, error } = await this.supabase.admin
-      .from('certificates')
-      .insert({
-        participant_id: enrollment.participant_id,
-        course_id: course.id,
-        enrollment_id: enrollment.id,
-        folio,
-        verification_token: verificationToken,
-        qr_data_url: qrDataUrl,
-        final_grade: enrollment.final_grade,
-        attendance_percentage: enrollment.attendance_percentage,
-        status: 'active',
-        issued_at: issuedAt.toISOString(),
-        expires_at: expiresAt ? expiresAt.toISOString() : null,
-      })
+      .from('certificate_requests')
+      .insert({ process_id: dto.process_id, requested_by: user.id, status: 'pendiente' })
       .select('*')
       .single();
     if (error) throw new ConflictException(error.message);
 
+    await this.stages.markStage(dto.process_id, 'TRAMITE_CERTIFICADO', 'in_progress', user, 'Trámite de certificado iniciado.');
+    if (['DICTAMEN', 'RESULTADOS'].includes(process.status)) {
+      await this.processes.advanceStatus(dto.process_id, 'TRAMITE', user);
+    }
+
     await this.auditLogs.log({
-      user_id: user.id,
-      action: 'CERTIFICATE_ISSUED',
-      entity: 'certificates',
-      entityid: data.id,
-      metadata: { folio, enrollment_id: enrollmentId },
+      user_id: user.id, action: 'CERTIFICATE_REQUEST_CREATED', entity: 'certificate_requests', entityid: data.id,
+      metadata: { process_id: dto.process_id },
     });
 
     return data;
   }
 
-  private async generateUniqueFolio(courseCode: string): Promise<string> {
-    const prefix = (courseCode || 'CERT').replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || 'CERT';
+  async listRequests(user: JwtUser, processId?: string) {
+    this.requireAdmin(user);
+    let q = this.supabase.admin
+      .from('certificate_requests')
+      .select('*, certification_processes ( folio, participant_id, estandar_id ) ')
+      .order('requested_at', { ascending: false });
+    if (processId) q = q.eq('process_id', processId);
+    const { data, error } = await q;
+    if (error) throw new NotFoundException(error.message);
+    return data ?? [];
+  }
+
+  /** Aprobar el trámite EMITE el certificado de inmediato (folio + token + QR). Rechazarlo no. */
+  async reviewRequest(id: string, dto: ReviewCertificateRequestDto, user: JwtUser) {
+    this.requireAdmin(user);
+
+    const { data: request, error } = await this.supabase.admin
+      .from('certificate_requests').select('*').eq('id', id).single();
+    if (error || !request) throw new NotFoundException('Trámite de certificado no encontrado.');
+    if (!['pendiente', 'en_revision'].includes(request.status)) {
+      throw new ConflictException('Este trámite ya fue revisado.');
+    }
+
+    const now = new Date().toISOString();
+
+    if (!dto.approve) {
+      const { data, error: updErr } = await this.supabase.admin
+        .from('certificate_requests')
+        .update({ status: 'rechazada', reviewed_by: user.id, reviewed_at: now, notes: dto.notes ?? null })
+        .eq('id', id).select('*').single();
+      if (updErr) throw new ConflictException(updErr.message);
+      await this.auditLogs.log({
+        user_id: user.id, action: 'CERTIFICATE_REQUEST_REJECTED', entity: 'certificate_requests', entityid: id,
+        old_data: { status: request.status }, metadata: { status: 'rechazada', notes: dto.notes },
+      });
+      return data;
+    }
+
+    const { data: approvedRequest, error: approveErr } = await this.supabase.admin
+      .from('certificate_requests')
+      .update({ status: 'aprobada', reviewed_by: user.id, reviewed_at: now, notes: dto.notes ?? null })
+      .eq('id', id).select('*').single();
+    if (approveErr || !approvedRequest) throw new ConflictException('No se pudo aprobar el trámite.');
+
+    const certificate = await this.issueFromApprovedRequest(approvedRequest, user);
+
+    await this.auditLogs.log({
+      user_id: user.id, action: 'CERTIFICATE_REQUEST_APPROVED', entity: 'certificate_requests', entityid: id,
+      old_data: { status: request.status }, metadata: { status: 'aprobada' },
+    });
+
+    return { request: approvedRequest, certificate };
+  }
+
+  private async issueFromApprovedRequest(request: { id: string; process_id: string }, user: JwtUser) {
+    const process = await this.processes.getProcessRaw(request.process_id);
+
+    const { data: estandar } = await this.supabase.admin
+      .from('estandares').select('codigo').eq('id', process.estandar_id).single();
+
+    const folio = await this.generateUniqueFolio(estandar?.codigo ?? 'CERT');
+    const verificationToken = crypto.randomBytes(24).toString('hex');
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:4200';
+    const verificationUrl = `${frontendUrl}/verificar/${verificationToken}`;
+    const qrDataUrl = await QRCode.toDataURL(verificationUrl, { margin: 1, width: 320 });
+
+    const { data: cedula } = await this.supabase.admin
+      .from('evaluation_cedulas').select('total_score').eq('process_id', process.id).maybeSingle();
+
+    const { data: certificate, error } = await this.supabase.admin
+      .from('certificates')
+      .insert({
+        process_id: process.id,
+        certificate_request_id: request.id,
+        participant_id: process.participant_id,
+        course_id: process.course_id,
+        folio,
+        verification_token: verificationToken,
+        qr_data_url: qrDataUrl,
+        final_grade: cedula?.total_score ?? null,
+        status: 'vigente',
+        issued_at: new Date().toISOString(),
+        issued_by: user.id,
+      })
+      .select('*')
+      .single();
+    if (error) throw new ConflictException(error.message);
+
+    await this.stages.markStage(process.id, 'TRAMITE_CERTIFICADO', 'completed', user, 'Certificado emitido.');
+    await this.processes.advanceStatus(process.id, 'EMISION', user);
+    await this.processes.closeProcess(process.id, user);
+
+    await this.auditLogs.log({
+      user_id: user.id, action: 'CERTIFICATE_ISSUED', entity: 'certificates', entityid: certificate.id,
+      metadata: { folio, process_id: process.id },
+    });
+
+    return certificate;
+  }
+
+  private async generateUniqueFolio(estandarCodigo: string): Promise<string> {
+    const prefix = (estandarCodigo || 'CERT').replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || 'CERT';
     for (let attempt = 0; attempt < 5; attempt++) {
       const random = crypto.randomBytes(4).toString('hex').toUpperCase();
       const year = new Date().getFullYear();
@@ -145,11 +206,7 @@ export class CertificatesService {
     this.requireAdmin(user);
     let q = this.supabase.admin
       .from('certificates')
-      .select(`
-        *,
-        participants ( id, full_name, email ),
-        courses ( id, name, code )
-      `)
+      .select(`*, participants ( id, full_name, email ), courses ( id, name, code )`)
       .order('issued_at', { ascending: false });
     if (filters.participant_id) q = q.eq('participant_id', filters.participant_id);
     if (filters.course_id) q = q.eq('course_id', filters.course_id);
@@ -162,7 +219,9 @@ export class CertificatesService {
     if (user.role !== 'CANDIDATO') {
       throw new ForbiddenException('Esta acción es solo para candidatos.');
     }
-    const participant = await this.participants.resolveOrCreateSelfParticipant(user);
+    const { data: participant } = await this.supabase.admin
+      .from('participants').select('id').eq('user_id', user.id).maybeSingle();
+    if (!participant) return [];
     const { data, error } = await this.supabase.admin
       .from('certificates')
       .select(`*, courses ( id, name, code )`)
@@ -180,18 +239,14 @@ export class CertificatesService {
     this.requireAdmin(user);
     const { data, error } = await this.supabase.admin
       .from('certificates')
-      .update({ status: 'revoked', revocation_reason: reason ?? null, revoked_by: user.id })
+      .update({ status: 'revocado', revocation_reason: reason ?? null, revoked_by: user.id })
       .eq('id', id)
       .select('*')
       .single();
     if (error || !data) throw new NotFoundException('Certificado no encontrado.');
 
     await this.auditLogs.log({
-      user_id: user.id,
-      action: 'CERTIFICATE_REVOKED',
-      entity: 'certificates',
-      entityid: id,
-      metadata: { reason },
+      user_id: user.id, action: 'CERTIFICATE_REVOKED', entity: 'certificates', entityid: id, metadata: { reason },
     });
 
     return data;
@@ -202,8 +257,6 @@ export class CertificatesService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async verifyPublic(ref: string) {
-    // Solo caracteres que un folio/token real puede tener; evita inyectar
-    // sintaxis de filtro de PostgREST a través del parámetro público.
     const cleanRef = (ref ?? '').trim().replace(/[^a-zA-Z0-9-]/g, '').slice(0, 128);
 
     let found = false;
@@ -213,14 +266,14 @@ export class CertificatesService {
       const { data } = await this.supabase.admin
         .from('certificates')
         .select(`
-          folio, status, issued_at, expires_at, final_grade, attendance_percentage,
+          folio, status, issued_at, expires_at, final_grade,
           participants ( full_name ),
           courses ( name, code )
         `)
         .or(`folio.eq.${cleanRef},verification_token.eq.${cleanRef}`)
         .maybeSingle<{
           folio: string; status: string; issued_at: string; expires_at: string | null;
-          final_grade: number | null; attendance_percentage: number | null;
+          final_grade: number | null;
           participants: { full_name: string } | null;
           courses: { name: string; code: string } | null;
         }>();
@@ -229,16 +282,15 @@ export class CertificatesService {
         found = true;
         const expired = data.expires_at ? new Date(data.expires_at) < new Date() : false;
         result = {
-          valid: data.status === 'active' && !expired,
+          valid: data.status === 'vigente' && !expired,
           folio: data.folio,
-          status: data.status === 'revoked' ? 'revoked' : expired ? 'expired' : 'active',
+          status: data.status === 'revocado' ? 'revocado' : expired ? 'vencido' : data.status,
           participant_name: data.participants?.full_name ?? null,
           course_name: data.courses?.name ?? null,
           course_code: data.courses?.code ?? null,
           issued_at: data.issued_at,
           expires_at: data.expires_at,
           final_grade: data.final_grade,
-          attendance_percentage: data.attendance_percentage,
         };
       }
     }
@@ -250,7 +302,15 @@ export class CertificatesService {
 
   private async logValidation(referencia: string, exitoso: boolean) {
     try {
-      await this.supabase.admin.from('validation_logs').insert({ referencia, exitoso });
+      // La tabla real (validation_logs) usa process_id/validation_type/status/
+      // message/details — no `referencia`/`exitoso`. Se registra igual como
+      // un evento de validación genérico para no perder la traza pública.
+      await this.supabase.admin.from('validation_logs').insert({
+        validation_type: 'PUBLIC_CERTIFICATE_LOOKUP',
+        status: exitoso ? 'ok' : 'warning',
+        message: exitoso ? 'Referencia encontrada.' : 'Referencia no encontrada.',
+        details: { referencia },
+      });
     } catch (err) {
       console.error('[CertificatesService] Error al registrar validation_logs:', err);
     }
@@ -263,7 +323,7 @@ export class CertificatesService {
     const { data, error } = await this.supabase.admin
       .from('validation_logs')
       .select('*')
-      .order('fecha', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw new NotFoundException(error.message);
     return data ?? [];

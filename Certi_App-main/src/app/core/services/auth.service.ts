@@ -19,6 +19,8 @@ export interface User {
   full_name: string;
   role: UserRole;
   phone: string | null;
+  avatar_url: string | null;
+  avatar_status: 'pending' | 'validated' | 'rejected' | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -173,13 +175,22 @@ export class AuthService {
 
   // ─── Gestión de usuarios (solo admin) ────────────────────────────────────
 
+  /**
+   * @throws Error con un mensaje legible si la carga falla (por ejemplo, un
+   *   error real del backend). A propósito NO se traga el error y devuelve
+   *   `[]` en ese caso — un [] silencioso se ve exactamente igual en la UI
+   *   que "no hay usuarios" y esconde el problema real. El llamador decide
+   *   cómo mostrarlo.
+   */
   async getAllUsers(): Promise<User[]> {
     const token = this.getToken();
     if (!token || !this.canManageUsers()) return [];
     try {
       return await firstValueFrom(this.api.get<User[]>('/users', token));
-    } catch {
-      return [];
+    } catch (err: any) {
+      const backendMsg = err?.error?.message;
+      const msg = Array.isArray(backendMsg) ? backendMsg.join(', ') : (backendMsg || err?.message || 'Error desconocido');
+      throw new Error(msg);
     }
   }
 
@@ -188,6 +199,44 @@ export class AuthService {
     if (!token) return false;
     try {
       await firstValueFrom(this.api.patch(`/users/${userId}`, data, token));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Sube (o reemplaza) la foto de perfil del usuario actual y refresca la sesión. */
+  /**
+   * `faceCheck`, si se pasa, es el resultado (ya calculado en el navegador
+   * con MediaPipe) del análisis automático de la foto — se envía solo como
+   * referencia informativa para el aviso que recibe el admin; el backend no
+   * depende de él para nada de seguridad.
+   */
+  async uploadAvatar(file: File, faceCheck?: unknown | null): Promise<{ ok: boolean; avatar_url?: string; error?: string }> {
+    const token = this.getToken();
+    const me = this.currentUser();
+    if (!token || !me) return { ok: false, error: 'No hay sesión activa.' };
+
+    const fd = new FormData();
+    fd.append('file', file);
+    if (faceCheck) fd.append('face_check', JSON.stringify(faceCheck));
+    try {
+      const updated = await firstValueFrom(
+        this.api.postFormData<User>(`/users/${me.id}/avatar`, fd, token),
+      );
+      this.saveSession({ ...me, avatar_url: updated.avatar_url });
+      return { ok: true, avatar_url: updated.avatar_url ?? undefined };
+    } catch (err: unknown) {
+      return { ok: false, error: this.extractError(err) };
+    }
+  }
+
+  /** Un admin valida o rechaza la foto de perfil de un usuario (revisión humana). */
+  async reviewAvatar(userId: string, action: 'validated' | 'rejected'): Promise<boolean> {
+    const token = this.getToken();
+    if (!token || !this.canManageUsers()) return false;
+    try {
+      await firstValueFrom(this.api.patch(`/users/${userId}/avatar-review`, { action }, token));
       return true;
     } catch {
       return false;

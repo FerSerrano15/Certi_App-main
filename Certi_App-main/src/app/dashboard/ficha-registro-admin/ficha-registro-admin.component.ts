@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { PdfService } from '../../core/services/pdf.service';
@@ -7,9 +7,9 @@ import {
 } from '../../core/services/ficha-registro.service';
 
 const STATUS_FILTERS: { value: FichaRegistroStatus | 'TODAS'; label: string }[] = [
-  { value: 'TODAS',     label: 'Todas' },
-  { value: 'pendiente', label: 'Pendientes' },
-  { value: 'aprobada',  label: 'Aprobadas' },
+  { value: 'TODAS',    label: 'Todas' },
+  { value: 'enviada',  label: 'Enviadas' },
+  { value: 'validada', label: 'Validadas' },
   { value: 'rechazada', label: 'Rechazadas' },
 ];
 
@@ -28,12 +28,39 @@ export class FichaRegistroAdminComponent implements OnInit {
 
   readonly statusFilters = STATUS_FILTERS;
 
+  /** id de la ficha a resaltar/desplazar (viene de "Ver solicitud" en las notificaciones). */
+  highlightId = input<string | null>(null);
+
   loading = signal(true);
   fichas = signal<FichaRegistroWithUser[]>([]);
   search = signal('');
   statusFilter = signal<FichaRegistroStatus | 'TODAS'>('TODAS');
   downloadingId = signal<string | null>(null);
   updatingId = signal<string | null>(null);
+  highlighted = signal<string | null>(null);
+
+  constructor() {
+    // Cuando llega un highlightId (o cambian las fichas cargadas), nos
+    // aseguramos de que los filtros no lo oculten, lo resaltamos y hacemos
+    // scroll hasta su fila.
+    effect(() => {
+      const id = this.highlightId();
+      const fichas = this.fichas();
+      if (!id) return;
+      if (!fichas.some(f => f.id === id)) return;
+
+      this.statusFilter.set('TODAS');
+      this.search.set('');
+      this.highlighted.set(id);
+
+      queueMicrotask(() => {
+        document.getElementById('ficha-row-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      setTimeout(() => {
+        if (this.highlighted() === id) this.highlighted.set(null);
+      }, 4000);
+    });
+  }
 
   filtered = computed(() => {
     const q = this.search().trim().toLowerCase();
@@ -73,7 +100,7 @@ export class FichaRegistroAdminComponent implements OnInit {
     }
   }
 
-  async changeStatus(f: FichaRegistroWithUser, status: FichaRegistroStatus) {
+  async changeStatus(f: FichaRegistroWithUser, status: 'validada' | 'rechazada') {
     if (status === f.status) return;
     this.updatingId.set(f.id);
     const ok = await this.svc.updateStatus(f.id, status);
@@ -84,6 +111,6 @@ export class FichaRegistroAdminComponent implements OnInit {
   }
 
   statusLabel(status: FichaRegistroStatus): string {
-    return { pendiente: 'Pendiente', aprobada: 'Aprobada', rechazada: 'Rechazada' }[status];
+    return { borrador: 'Borrador', enviada: 'Enviada', validada: 'Validada', rechazada: 'Rechazada' }[status];
   }
 }

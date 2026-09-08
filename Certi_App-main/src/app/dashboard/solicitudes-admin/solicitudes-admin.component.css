@@ -1,0 +1,109 @@
+.sa-wrap { font-family: 'Inter', sans-serif; max-width: 980px; margin: 0 auto; }
+.sa-header { margin-bottom: 1rem; }
+.sa-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0; }
+.sa-sub { font-size: 0.88rem; color: #64748b; margin: 0.25rem 0 0; }
+.sa-muted { color: #94a3b8; font-size: 0.85rem; }
+
+.sa-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.sa-filter-btn {
+  background: #f1f5f9; border: 1.5px solid #e2e8f0; border-radius: 999px; padding: 0.4rem 0.9rem;
+  font-size: 0.78rem; font-weight: 700; color: #64748b; cursor: pointer;
+}
+.sa-filter-btn.active { background: #0d9488; border-color: #0d9488; color: #fff; }
+
+.sa-empty { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 2rem; text-align: center; color: #64748b; }
+
+.sa-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.sa-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.25rem;
+  flex-wrap: wrap; cursor: pointer;
+}
+.sa-card:hover { border-color: #99f6e4; }
+.sa-card-body { display: flex; flex-direction: column; gap: 0.15rem; }
+.sa-card-candidato { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.sa-card-estandar { font-size: 0.8rem; color: #0d9488; font-weight: 600; }
+.sa-card-date { font-size: 0.75rem; color: #94a3b8; }
+
+.sa-status {
+  font-size: 0.72rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap;
+  color: #64748b; background: #f1f5f9;
+}
+.sa-status[data-status="pendiente"], .sa-status[data-status="en_revision"] { color: #b45309; background: #fffbeb; }
+.sa-status[data-status="aprobada"], .sa-status[data-status="completada"] { color: #047857; background: #ecfdf5; }
+.sa-status[data-status="rechazada"], .sa-status[data-status="cancelada"] { color: #b91c1c; background: #fef2f2; }
+
+.sa-back-btn {
+  background: none; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.55rem 1rem;
+  font-size: 0.85rem; font-weight: 600; color: #334155; cursor: pointer; margin-bottom: 1rem;
+}
+.sa-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.sa-detail-header h3 { margin: 0; font-size: 1.1rem; color: #0f172a; }
+
+.sa-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; margin-bottom: 1.25rem; }
+.sa-tab-btn {
+  background: none; border: none; border-bottom: 2px solid transparent; padding: 0.6rem 0.4rem;
+  font-size: 0.8rem; font-weight: 700; color: #64748b; cursor: pointer;
+}
+.sa-tab-btn.active { color: #0d9488; border-color: #0d9488; }
+
+.sa-tab-body { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
+.sa-subtitle { font-size: 0.92rem; color: #0f172a; margin: 1.25rem 0 0.5rem; }
+.sa-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; }
+.sa-info-grid > div { display: flex; flex-direction: column; gap: 0.15rem; }
+.sa-info-label { font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+
+.sa-doc-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.sa-doc-item { background: #f8fafc; border-radius: 8px; padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+
+.sa-doc-row {
+  display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
+}
+.sa-doc-info { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 160px; }
+.sa-doc-type { font-size: 0.85rem; font-weight: 700; color: #0f172a; }
+.sa-doc-name { font-size: 0.75rem; color: #64748b; }
+.sa-status[data-doc-status="pending"] { color: #b45309; background: #fffbeb; }
+.sa-status[data-doc-status="validated"] { color: #047857; background: #ecfdf5; }
+.sa-status[data-doc-status="rejected"] { color: #b91c1c; background: #fef2f2; }
+.sa-doc-actions { display: flex; align-items: center; gap: 0.5rem; }
+.sa-doc-btn {
+  padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1;
+  background: #fff; color: #0f172a; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.sa-doc-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
+.sa-doc-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+
+.sa-history { display: flex; flex-direction: column; gap: 0.4rem; }
+.sa-history-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: #f8fafc; border-radius: 8px; padding: 0.5rem 0.85rem; font-size: 0.8rem; }
+.sa-history-action { font-weight: 600; color: #334155; }
+
+.sa-field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.9rem; }
+.sa-field textarea, .sa-field select, .sa-inline-create input {
+  border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.55rem 0.75rem; font-size: 0.85rem; font-family: inherit;
+}
+.sa-feedback { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 10px; padding: 0.6rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; }
+.sa-notes { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; }
+.sa-warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.85rem; }
+
+.sa-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.sa-btn {
+  background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1.1rem;
+  font-size: 0.83rem; font-weight: 700; color: #0f172a; cursor: pointer;
+}
+.sa-btn:hover { background: #e2e8f0; }
+.sa-btn:disabled { opacity: 0.6; cursor: default; }
+.sa-btn.primary { background: linear-gradient(135deg, #2dd4bf, #0d9488); color: #fff; border: none; }
+.sa-btn.danger { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+
+.sa-inline-create { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 1rem; }
+
+.sa-evaluator-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+.sa-evaluator-item {
+  display: flex; align-items: center; gap: 0.75rem; background: #f8fafc; border-radius: 10px;
+  padding: 0.65rem 0.9rem; font-size: 0.85rem; cursor: pointer;
+}
+
+.sa-confirm-summary { background: #f8fafc; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; font-size: 0.88rem; }
+.sa-confirm-summary p { margin: 0.3rem 0; }

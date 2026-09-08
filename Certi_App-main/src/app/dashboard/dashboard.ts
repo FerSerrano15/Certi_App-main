@@ -1,10 +1,8 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, User, UserRole } from '../core/services/auth.service';
-import { LmsComponent } from './lms/lms.component';
 import { EstandaresComponent } from './estandares/estandares.component';
-import { ParticipantsComponent } from './participants/participants.component';
 import { AttendanceComponent } from './attendance/attendance.component';
 import { EnrollmentFormsAdminComponent } from './enrollment-forms-admin/enrollment-forms-admin.component';
 import { ParticipantsService, Participant, Enrollment } from '../core/services/participants.service';
@@ -18,6 +16,14 @@ import { LandingEditorComponent } from './landing-editor/landing-editor.componen
 import { MisFichasComponent } from './mis-fichas/mis-fichas.component';
 import { NotificationsBellComponent } from './notifications-bell/notifications-bell.component';
 import { FichaRegistroAdminComponent } from './ficha-registro-admin/ficha-registro-admin.component';
+import { EstandarPickerComponent } from '../shared/estandar-picker/estandar-picker.component';
+import { Estandar } from '../core/services/estandares.service';
+import { MiCertificacionComponent } from './mi-certificacion/mi-certificacion.component';
+import { SolicitudesAdminComponent } from './solicitudes-admin/solicitudes-admin.component';
+import { EvaluadorProcesosComponent } from './evaluador-procesos/evaluador-procesos.component';
+import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
+import { FaceAnalysisService, FaceCheckResult } from '../core/services/face-analysis.service';
+import { UserDetailModalComponent } from './user-detail-modal/user-detail-modal.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,9 +31,7 @@ import { FichaRegistroAdminComponent } from './ficha-registro-admin/ficha-regist
   imports: [
     RouterLink,
     DatePipe,
-    LmsComponent,
     EstandaresComponent,
-    ParticipantsComponent,
     AttendanceComponent,
     EnrollmentFormsAdminComponent,
     EnrollmentFormWizardComponent,
@@ -35,11 +39,16 @@ import { FichaRegistroAdminComponent } from './ficha-registro-admin/ficha-regist
     MisFichasComponent,
     NotificationsBellComponent,
     FichaRegistroAdminComponent,
+    EstandarPickerComponent,
+    MiCertificacionComponent,
+    SolicitudesAdminComponent,
+    EvaluadorProcesosComponent,
+    UserDetailModalComponent,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   private readonly partSvc = inject(ParticipantsService);
   private readonly certSvc = inject(CertificationsService);
@@ -48,9 +57,16 @@ export class DashboardComponent implements OnInit {
   private readonly certificatesSvc = inject(CertificatesService);
   private readonly auditSvc = inject(AuditLogsService);
   private router = inject(Router);
+  private readonly confirmSvc = inject(ConfirmDialogService);
+  private readonly faceAnalysis = inject(FaceAnalysisService);
 
   activeTab = signal('inicio');
+  highlightFichaId = signal<string | null>(null);
+  /** Usuario abierto en el modal de detalle (foto + documentos), desde la tabla de Usuarios o una notificación. */
+  selectedUserForDetail = signal<User | null>(null);
   allUsers = signal<User[]>([]);
+  /** Mensaje de error si la última carga de usuarios falló (null = sin error). */
+  usersLoadError = signal<string | null>(null);
   actionSuccess = signal('');
   mobileMenuOpen = signal(false);
 
@@ -68,7 +84,7 @@ export class DashboardComponent implements OnInit {
   availableGroupsFiltered = computed(() => {
     const enrolledIds = new Set(this.myEnrollments().map(e => e.group_id));
     return this.availableGroups().filter(g =>
-      !enrolledIds.has(g.id) && g.status !== 'CANCELADO' && g.status !== 'FINALIZADO'
+      !enrolledIds.has(g.id) && g.status !== 'cancelado' && g.status !== 'finalizado'
     );
   });
 
@@ -92,6 +108,8 @@ export class DashboardComponent implements OnInit {
   newCertCode = signal('');
   newCertName = signal('');
   newCertExpires = signal('');
+  newCertEstandar = signal<Estandar | null>(null);
+  showEstandarPicker = signal(false);
 
   hasEvaluatorCredential = computed(() =>
     this.evaluatorCerts().some(c => c.type === 'EVALUATOR_CREDENTIAL' && c.status === 'vigente')
@@ -116,6 +134,155 @@ export class DashboardComponent implements OnInit {
 
   toggleProfileCard(card: string): void {
     this.activeProfileCard.update(current => current === card ? null : card);
+  }
+
+  // ─── Foto de perfil (archivo o cámara) ────────────────────────────────────
+  avatarBusy = signal(false);
+  avatarFeedback = signal('');
+  avatarFeedbackIsError = signal(false);
+
+  // Resultado del análisis automático de la foto (MediaPipe, en el propio
+  // navegador) — se muestra como checklist antes de permitir la subida.
+  faceCheckBusy = signal(false);
+  faceCheckResult = signal<FaceCheckResult | null>(null);
+
+  showCameraModal = signal(false);
+  cameraReady = signal(false);
+  cameraError = signal('');
+  capturedPhoto = signal<string | null>(null);
+  private cameraStream: MediaStream | null = null;
+  private capturedBlob: Blob | null = null;
+
+  cameraVideoRef = viewChild<ElementRef<HTMLVideoElement>>('cameraVideo');
+  cameraCanvasRef = viewChild<ElementRef<HTMLCanvasElement>>('cameraCanvas');
+
+  async onAvatarFileSelected(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = ''; // permite volver a elegir el mismo archivo después
+    if (!file) return;
+    await this.uploadAvatarFile(file);
+  }
+
+  private async uploadAvatarFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      this.avatarFeedback.set('Selecciona un archivo de imagen (JPG, PNG o WEBP).');
+      this.avatarFeedbackIsError.set(true);
+      this.faceCheckResult.set(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.avatarFeedback.set('La imagen no debe superar 5 MB.');
+      this.avatarFeedbackIsError.set(true);
+      this.faceCheckResult.set(null);
+      return;
+    }
+
+    // Análisis automático (en el navegador) antes de subir: evita que se
+    // cuelen fotos que claramente no son un rostro (capturas de
+    // videojuegos, memes, paisajes, etc.) o que tengan problemas obvios de
+    // encuadre. No sustituye la revisión humana — solo filtra lo evidente.
+    this.faceCheckBusy.set(true);
+    this.avatarFeedback.set('');
+    let check: FaceCheckResult | null = null;
+    try {
+      check = await this.faceAnalysis.analyzeFile(file);
+    } catch {
+      // Si el análisis falla (p.ej. sin conexión para descargar el modelo
+      // la primera vez), no bloqueamos al usuario — dejamos que el admin
+      // revise la foto manualmente como respaldo.
+      check = null;
+    }
+    this.faceCheckBusy.set(false);
+    this.faceCheckResult.set(check);
+
+    if (check && !check.resultado.apta) {
+      this.avatarFeedback.set('La foto no pasó la verificación automática. Revisa los puntos marcados abajo.');
+      this.avatarFeedbackIsError.set(true);
+      return;
+    }
+
+    this.avatarBusy.set(true);
+    const res = await this.auth.uploadAvatar(file, check);
+    this.avatarBusy.set(false);
+    if (res.ok) {
+      this.avatarFeedback.set('✅ Foto de perfil actualizada. Un administrador la revisará en breve.');
+      this.avatarFeedbackIsError.set(false);
+      this.faceCheckResult.set(null);
+      this.closeCamera();
+    } else {
+      this.avatarFeedback.set(res.error ?? 'No se pudo actualizar la foto.');
+      this.avatarFeedbackIsError.set(true);
+    }
+  }
+
+  async openCamera() {
+    this.showCameraModal.set(true);
+    this.cameraError.set('');
+    this.capturedPhoto.set(null);
+    this.capturedBlob = null;
+    this.cameraReady.set(false);
+    this.faceCheckResult.set(null);
+    this.avatarFeedback.set('');
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      queueMicrotask(() => {
+        const video = this.cameraVideoRef()?.nativeElement;
+        if (video) {
+          video.srcObject = this.cameraStream;
+          video.onloadedmetadata = () => this.cameraReady.set(true);
+        }
+      });
+    } catch {
+      this.cameraError.set('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+    }
+  }
+
+  closeCamera() {
+    this.showCameraModal.set(false);
+    this.cameraStream?.getTracks().forEach(t => t.stop());
+    this.cameraStream = null;
+    this.cameraReady.set(false);
+    this.capturedPhoto.set(null);
+    this.capturedBlob = null;
+    this.faceCheckResult.set(null);
+  }
+
+  capturePhoto() {
+    const video = this.cameraVideoRef()?.nativeElement;
+    const canvas = this.cameraCanvasRef()?.nativeElement;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Detiene el stream en vivo en cuanto tenemos la foto (evita dejar la
+    // cámara encendida mientras se muestra la previsualización).
+    this.cameraStream?.getTracks().forEach(t => t.stop());
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      this.capturedBlob = blob;
+      this.capturedPhoto.set(canvas.toDataURL('image/jpeg', 0.92));
+    }, 'image/jpeg', 0.92);
+  }
+
+  retakePhoto() {
+    this.capturedPhoto.set(null);
+    this.capturedBlob = null;
+    this.faceCheckResult.set(null);
+    this.avatarFeedback.set('');
+    this.openCamera();
+  }
+
+  async confirmCapturedPhoto() {
+    if (!this.capturedBlob) return;
+    const file = new File([this.capturedBlob], 'foto-perfil.jpg', { type: 'image/jpeg' });
+    await this.uploadAvatarFile(file);
+  }
+
+  ngOnDestroy() {
+    this.cameraStream?.getTracks().forEach(t => t.stop());
   }
 
   // ─── Cambio de contraseña ─────────────────────────────────────────────────
@@ -179,8 +346,17 @@ export class DashboardComponent implements OnInit {
   }
 
   // ─── Mis documentos ────────────────────────────────────────────────────────
+  /** Mensaje de error si la última carga de "mis documentos" falló (null = sin error). */
+  myDocumentsLoadError = signal<string | null>(null);
+
   async loadMyDocuments() {
-    this.myDocuments.set(await this.docsSvc.list());
+    try {
+      this.myDocuments.set(await this.docsSvc.list());
+      this.myDocumentsLoadError.set(null);
+    } catch (err: any) {
+      this.myDocuments.set([]);
+      this.myDocumentsLoadError.set(err?.message || 'No se pudo cargar tu lista de documentos.');
+    }
   }
 
   onMyDocFileSelected(e: Event) {
@@ -190,18 +366,46 @@ export class DashboardComponent implements OnInit {
   async uploadMyDocument() {
     if (!this.myPendingFile) return;
     this.uploadingMyDoc.set(true);
-    const result = await this.docsSvc.uploadSelf(this.selectedMyDocType(), this.myPendingFile);
-    if (result) {
+    try {
+      await this.docsSvc.uploadSelf(this.selectedMyDocType(), this.myPendingFile);
       this.actionSuccess.set('✅ Documento subido correctamente.');
       setTimeout(() => this.actionSuccess.set(''), 3000);
       this.myPendingFile = null;
       await this.loadMyDocuments();
-    } else {
-      this.actionSuccess.set('No se pudo subir el documento (PDF/JPG/PNG, máx. 10 MB).');
-      setTimeout(() => this.actionSuccess.set(''), 4000);
+    } catch (err: any) {
+      this.actionSuccess.set(`❌ No se pudo subir el documento: ${err?.message || 'error desconocido'}`);
+      setTimeout(() => this.actionSuccess.set(''), 8000);
     }
     this.uploadingMyDoc.set(false);
   }
+
+  /**
+   * Checklist de "Mis documentos": para cada tipo (INE, CURP, etc.) dice si
+   * ya se subió algo y en qué estado. INE es obligatorio y comprobante de
+   * estudios es opcional — el resto (comprobante de domicilio, CURP,
+   * fotografía, otro) no tiene una exigencia definida todavía, así que no
+   * llevan etiqueta de "Obligatorio"/"Opcional".
+   */
+  docTypeUploadStatus(type: string): 'validated' | 'pending' | 'rejected' | 'missing' {
+    const docs = this.myDocuments().filter(d => d.type === type);
+    if (!docs.length) return 'missing';
+    if (docs.some(d => d.status === 'validated')) return 'validated';
+    if (docs.some(d => d.status === 'pending')) return 'pending';
+    return 'rejected';
+  }
+
+  docTypeUploadStatusLabel(type: string): string {
+    const map: Record<string, string> = {
+      validated: 'Validado', pending: 'Pendiente de revisión', rejected: 'Rechazado — vuelve a subirlo', missing: 'No subido',
+    };
+    return map[this.docTypeUploadStatus(type)];
+  }
+
+  /** Documentos marcados como obligatorios que el candidato aún no ha subido (o le fueron rechazados). */
+  missingRequiredDocTypes = computed(() =>
+    this.documentTypes.filter(t => t.requirement === 'required' &&
+      this.docTypeUploadStatus(t.value) !== 'validated' && this.docTypeUploadStatus(t.value) !== 'pending')
+  );
 
   docStatusLabel(status: string): string {
     const map: Record<string, string> = { pending: 'Pendiente', validated: 'Validado', rejected: 'Rechazado' };
@@ -280,6 +484,8 @@ export class DashboardComponent implements OnInit {
     this.newCertCode.set('');
     this.newCertName.set('');
     this.newCertExpires.set('');
+    this.newCertEstandar.set(null);
+    this.showEstandarPicker.set(false);
     this.showCertModal.set(true);
     await this.loadEvaluatorCerts(evaluator.id);
   }
@@ -296,12 +502,19 @@ export class DashboardComponent implements OnInit {
     this.loadingCerts.set(false);
   }
 
+  onEstandarPicked(e: Estandar) {
+    this.newCertEstandar.set(e);
+    this.newCertCode.set(e.codigo);
+    this.showEstandarPicker.set(false);
+  }
+
   async addCertification() {
     const evaluator = this.managingEvaluator();
     if (!evaluator) return;
     const type = this.newCertType();
-    if (type === 'STANDARD' && !this.newCertCode().trim()) {
-      this.actionSuccess.set('Ingresa el código del estándar/curso (ej: EC0217).');
+    const estandar = this.newCertEstandar();
+    if (type === 'STANDARD' && !estandar) {
+      this.actionSuccess.set('Selecciona el estándar de competencia (ej: EC0217).');
       setTimeout(() => this.actionSuccess.set(''), 3000);
       return;
     }
@@ -309,14 +522,17 @@ export class DashboardComponent implements OnInit {
     const result = await this.certSvc.create({
       user_id: evaluator.id,
       type,
-      code: type === 'STANDARD' ? this.newCertCode().trim() : undefined,
-      name: this.newCertName().trim() || undefined,
+      estandar_id: type === 'STANDARD' ? estandar!.id : undefined,
+      code: type === 'STANDARD' ? estandar!.codigo : undefined,
+      name: this.newCertName().trim() || (type === 'STANDARD' ? estandar!.nombre : undefined),
       expires_at: this.newCertExpires() || undefined,
     });
     if (result) {
       this.newCertCode.set('');
       this.newCertName.set('');
       this.newCertExpires.set('');
+      this.newCertEstandar.set(null);
+      this.showEstandarPicker.set(false);
       await this.loadEvaluatorCerts(evaluator.id);
     } else {
       this.loadingCerts.set(false);
@@ -324,7 +540,12 @@ export class DashboardComponent implements OnInit {
   }
 
   async removeCertification(id: string) {
-    if (!confirm('¿Eliminar esta certificación?')) return;
+    const ok1 = await this.confirmSvc.ask({
+      title: 'Eliminar certificación',
+      message: '¿Eliminar esta certificación?',
+      detail: 'El evaluador dejará de contar con esta credencial/certificación de inmediato. Esta acción no se puede deshacer.',
+    });
+    if (!ok1) return;
     const ok = await this.certSvc.remove(id);
     if (ok) {
       const evaluator = this.managingEvaluator();
@@ -340,8 +561,14 @@ export class DashboardComponent implements OnInit {
   closeMobileMenu() { this.mobileMenuOpen.set(false); }
 
   async loadUsers() {
-    const users = await this.auth.getAllUsers();
-    this.allUsers.set(users);
+    try {
+      const users = await this.auth.getAllUsers();
+      this.allUsers.set(users);
+      this.usersLoadError.set(null);
+    } catch (err: any) {
+      this.allUsers.set([]);
+      this.usersLoadError.set(err?.message || 'No se pudo cargar la lista de usuarios.');
+    }
   }
 
   get user() { return this.auth.currentUser(); }
@@ -357,13 +584,32 @@ export class DashboardComponent implements OnInit {
   userSearchQuery = signal('');
   userRoleFilter = signal<UserRole | 'TODOS'>('TODOS');
 
-  readonly userRoleFilterOptions: { value: UserRole | 'TODOS'; label: string }[] = [
-    { value: 'TODOS', label: 'Todos los roles' },
-    { value: 'CANDIDATO', label: 'Candidato' },
-    { value: 'EVALUADOR', label: 'Evaluador' },
-    { value: 'ADMIN', label: 'Admin' },
-    { value: 'SUPER_ADMIN', label: 'Super Admin' },
-  ];
+  // La opción "Super Admin" solo tiene sentido para quien ya es SUPER_ADMIN:
+  // un ADMIN nunca recibe cuentas SUPER_ADMIN en `allUsers` (el backend las
+  // filtra por completo), así que mostrar el filtro sería confuso.
+  userRoleFilterOptions = computed<{ value: UserRole | 'TODOS'; label: string }[]>(() => {
+    const base: { value: UserRole | 'TODOS'; label: string }[] = [
+      { value: 'TODOS', label: 'Todos los roles' },
+      { value: 'CANDIDATO', label: 'Candidato' },
+      { value: 'EVALUADOR', label: 'Evaluador' },
+      { value: 'ADMIN', label: 'Admin' },
+    ];
+    if (this.auth.isSuperAdmin()) {
+      base.push({ value: 'SUPER_ADMIN', label: 'Super Admin' });
+    }
+    return base;
+  });
+
+  /**
+   * Jerarquía de administración: un ADMIN puede VER a otros ADMIN en esta
+   * tabla, pero no puede modificarlos de ninguna forma (ni desactivarlos, ni
+   * cambiarles el rol, ni sus datos) — no puede "bajar de nivel" a ningún
+   * admin. Las cuentas SUPER_ADMIN ni siquiera llegan a `allUsers` para un
+   * ADMIN (el backend las filtra), así que no necesitan chequeo aquí.
+   */
+  isPeerAdminLocked(u: User): boolean {
+    return u.role === 'ADMIN' && !this.auth.isSuperAdmin() && u.id !== this.user?.id;
+  }
 
   filteredUsers = computed(() => {
     const query = this.userSearchQuery().trim().toLowerCase();
@@ -539,6 +785,51 @@ export class DashboardComponent implements OnInit {
     this.mobileMenuOpen.set(false);
   }
 
+  /** "Ver solicitud" desde la campanita de notificaciones — navega a Solicitudes de Ficha y resalta la ficha concreta. */
+  onOpenSolicitudFromNotification(fichaId: string | null) {
+    this.highlightFichaId.set(fichaId);
+    this.setTab('solicitudes');
+  }
+
+  /** Notificación de foto de perfil — abre el detalle de ese usuario (foto + documentos). */
+  async onOpenUsuarioFromNotification(ev: { user_id: string; full_name: string | null }) {
+    this.setTab('usuarios');
+    await this.openUserDetailById(ev.user_id);
+  }
+
+  /** Notificación de documento subido — abre el detalle de ese usuario (foto + documentos). */
+  async onOpenParticipantDocsFromNotification(ev: { participant_id: string; full_name: string | null; user_id?: string | null }) {
+    this.setTab('usuarios');
+    if (ev.user_id) await this.openUserDetailById(ev.user_id);
+  }
+
+  /** Abre el modal de detalle de un usuario, buscándolo primero en la lista ya cargada. */
+  async openUserDetailById(userId: string) {
+    if (!this.allUsers().length) await this.loadUsers();
+    let u = this.allUsers().find(x => x.id === userId) ?? null;
+    if (!u) {
+      // No estaba en la lista cargada (p.ej. quedó desactualizada) — recarga una vez más.
+      await this.loadUsers();
+      u = this.allUsers().find(x => x.id === userId) ?? null;
+    }
+    if (u) this.selectedUserForDetail.set(u);
+  }
+
+  openUserDetail(u: User) {
+    this.selectedUserForDetail.set(u);
+  }
+
+  closeUserDetail() {
+    this.selectedUserForDetail.set(null);
+  }
+
+  /** El modal de detalle validó/rechazó la foto de perfil — recarga la lista y refresca el usuario mostrado. */
+  async onUserDetailChanged() {
+    const id = this.selectedUserForDetail()?.id;
+    await this.loadUsers();
+    if (id) this.selectedUserForDetail.set(this.allUsers().find(u => u.id === id) ?? null);
+  }
+
   async logout() { await this.auth.logout(); }
 
   /** Primer nombre del usuario actual */
@@ -577,9 +868,11 @@ export class DashboardComponent implements OnInit {
 
     if (role === 'CANDIDATO') return [...base,
     { id: 'ficha-registro', label: 'Ficha de Registro' },
+    { id: 'mi-certificacion', label: 'Mi Certificación' },
     { id: 'perfil', label: 'Mi perfil' },
     ];
     if (role === 'EVALUADOR') return [...base,
+    { id: 'mis-procesos', label: 'Mis Procesos' },
     { id: 'perfil', label: 'Mi perfil' },
     { id: 'asistencia', label: 'Asistencia' },
     ];
@@ -587,6 +880,7 @@ export class DashboardComponent implements OnInit {
     { id: 'usuarios', label: 'Usuarios' },
     { id: 'estandares', label: 'Estándares' },
     { id: 'solicitudes', label: 'Solicitudes de Ficha' },
+    { id: 'solicitudes-certificacion', label: 'Solicitudes de Certificación' },
     { id: 'certificados', label: 'Certificados' },
     { id: 'formularios', label: 'Formularios' },
     { id: 'reportes', label: 'Reportes' },
@@ -595,6 +889,7 @@ export class DashboardComponent implements OnInit {
     { id: 'usuarios', label: 'Todos los usuarios' },
     { id: 'estandares', label: 'Estándares' },
     { id: 'solicitudes', label: 'Solicitudes de Ficha' },
+    { id: 'solicitudes-certificacion', label: 'Solicitudes de Certificación' },
     { id: 'certificados', label: 'Certificados' },
     { id: 'formularios', label: 'Formularios' },
     { id: 'reportes', label: 'Reportes' },

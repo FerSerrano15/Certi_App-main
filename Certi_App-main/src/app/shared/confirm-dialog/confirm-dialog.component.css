@@ -1,0 +1,100 @@
+.cd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 1rem;
+}
+
+.cd-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: cd-pop 0.15s ease-out;
+}
+
+@keyframes cd-pop {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.cd-box-danger {
+  border: 1.5px solid #fecaca;
+}
+
+.cd-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.9rem;
+}
+
+.cd-icon-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.cd-icon-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.cd-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cd-message {
+  margin: 0 0 1.5rem;
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.cd-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.cd-btn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cd-btn-cancel {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.cd-btn-cancel:hover { background: #f1f5f9; }
+
+.cd-btn-continue {
+  background: #b45309;
+  color: #fff;
+}
+.cd-btn-continue:hover { background: #92400e; }
+
+.cd-btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+.cd-btn-danger:hover { background: #b91c1c; }

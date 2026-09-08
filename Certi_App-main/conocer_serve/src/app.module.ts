@@ -20,6 +20,9 @@ import { EstandaresModule } from './estandares/estandares.module';
 import { EvaluacionesModule } from './evaluaciones/evaluaciones.module';
 import { FichaRegistroModule } from './ficha-registro/ficha-registro.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SolicitudesModule } from './solicitudes/solicitudes.module';
+import { CertificationProcessModule } from './certification-process/certification-process.module';
+import { EvidencesModule } from './evidences/evidences.module';
 
 @Module({
   imports: [
@@ -48,6 +51,9 @@ import { NotificationsModule } from './notifications/notifications.module';
     EvaluacionesModule,
     NotificationsModule,
     FichaRegistroModule,
+    SolicitudesModule,
+    CertificationProcessModule,
+    EvidencesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

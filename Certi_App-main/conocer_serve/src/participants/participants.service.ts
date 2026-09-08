@@ -53,6 +53,24 @@ export class ParticipantsService {
     return data ?? [];
   }
 
+  /**
+   * Busca el registro de participante ligado a una cuenta de usuario — para
+   * que el admin, al abrir el detalle de un usuario en la sección
+   * "Usuarios", pueda ver (y revisar) sus documentos. Devuelve null si el
+   * usuario aún no tiene expediente de participante (p.ej. nunca llenó una
+   * ficha ni generó una solicitud).
+   */
+  async findByUserId(userId: string, requester: JwtUser) {
+    this.requireAdmin(requester);
+    const { data, error } = await this.supabase.admin
+      .from('participants')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw new NotFoundException(error.message);
+    return data;
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   //  ELEGIBLES PARA UN GRUPO
   //  Un candidato aparece como opción para inscribirse en un grupo únicamente si:

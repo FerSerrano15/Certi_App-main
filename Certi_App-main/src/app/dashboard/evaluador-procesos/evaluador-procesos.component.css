@@ -1,0 +1,30 @@
+.ep-wrap { font-family: 'Inter', sans-serif; max-width: 860px; margin: 0 auto; }
+.ep-header { margin-bottom: 1.5rem; }
+.ep-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0; }
+.ep-sub { font-size: 0.88rem; color: #64748b; margin: 0.25rem 0 0; }
+.ep-muted { color: #94a3b8; font-size: 0.85rem; }
+.ep-empty {
+  background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 3rem 1.5rem;
+  text-align: center; color: #64748b;
+}
+.ep-empty h3 { font-size: 1.05rem; color: #0f172a; margin: 0 0 0.4rem; }
+.ep-empty p { font-size: 0.85rem; margin: 0; }
+
+.ep-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.ep-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.25rem;
+  flex-wrap: wrap; cursor: pointer; transition: border-color 0.15s;
+}
+.ep-card:hover { border-color: #99f6e4; }
+.ep-card-body { display: flex; flex-direction: column; gap: 0.15rem; }
+.ep-card-folio { font-size: 0.75rem; font-weight: 800; color: #0d9488; letter-spacing: 0.02em; }
+.ep-card-nombre { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.ep-card-candidato { font-size: 0.8rem; color: #64748b; }
+
+.ep-status {
+  font-size: 0.72rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap;
+  color: #64748b; background: #f1f5f9;
+}
+.ep-status[data-status="EMISION"], .ep-status[data-status="CIERRE"] { color: #047857; background: #ecfdf5; }
+.ep-status[data-status="AUN_NO_COMPETENTE"], .ep-status[data-status="CANCELADO"] { color: #b91c1c; background: #fef2f2; }

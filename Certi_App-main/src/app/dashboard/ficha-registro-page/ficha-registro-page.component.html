@@ -99,6 +99,8 @@
                   } @else {
                     <span class="fr-error">La CURP debe tener exactamente 18 caracteres alfanuméricos</span>
                   }
+                } @else {
+                  <span class="fr-hint">Al completarla, se autocompletan estado de nacimiento, nacionalidad, fecha de nacimiento y género.</span>
                 }
               </div>
               <div class="fr-field" [class.has-error]="invalid('fechaNacimiento')">

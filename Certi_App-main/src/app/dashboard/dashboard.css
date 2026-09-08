@@ -74,6 +74,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .dash-user-info { min-width: 0; flex: 1; }
 .dash-user-name {
@@ -207,6 +208,7 @@
 
 /* Section Headers */
 .section-h2 { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+.profile-subsection-title { font-size: 0.95rem; font-weight: 800; color: #0f172a; border-top: 1px solid #f1f5f9; padding-top: 1.1rem; margin: 0.25rem 0 0.85rem; }
 .section-sub { font-size: 0.875rem; color: #64748b; margin-bottom: 1.5rem; }
 
 /* Tables responsive */
@@ -258,7 +260,96 @@
   flex-shrink: 0;
   box-shadow: 0 4px 16px rgba(45,212,191,0.35);
   border: 3px solid rgba(255,255,255,0.18);
+  overflow: hidden;
 }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+
+/* ── Foto de perfil: subir desde archivo o cámara ─────────────────────── */
+.avatar-upload-block {
+  display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+  padding-bottom: 1.25rem; margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.avatar-upload-preview {
+  width: 84px; height: 84px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(135deg, #2dd4bf, #0d9488);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(45,212,191,0.25);
+}
+.avatar-upload-placeholder { color: #fff; font-size: 2rem; font-weight: 900; }
+.avatar-upload-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.avatar-btn {
+  padding: 0.55rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;
+  background: #fff; color: #0f172a; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.avatar-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
+.avatar-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.avatar-btn.primary { background: #0d9488; border-color: #0d9488; color: #fff; }
+.avatar-btn.primary:hover:not(:disabled) { background: #0f766e; }
+.avatar-upload-spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid #cbd5e1; border-top-color: #0d9488;
+  animation: avatar-spin 0.7s linear infinite;
+}
+@keyframes avatar-spin { to { transform: rotate(360deg); } }
+.avatar-feedback {
+  width: 100%; font-size: 0.82rem; font-weight: 600; color: #0d9488;
+  margin-top: 0.35rem;
+}
+.avatar-feedback.error { color: #dc2626; }
+
+/* ── Ejemplo de foto válida (guía para el usuario) ────────────────────── */
+.avatar-example-hint {
+  width: 100%; display: flex; align-items: center; gap: 1rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 0.85rem 1rem; margin-bottom: 0.25rem;
+}
+.avatar-example-img {
+  width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+  flex-shrink: 0; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(15,23,42,0.15);
+}
+.avatar-example-text strong { display: block; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.2rem; }
+.avatar-example-text p { font-size: 0.78rem; color: #64748b; line-height: 1.4; margin: 0; }
+
+/* ── Checklist del análisis automático (MediaPipe) ────────────────────── */
+.face-check-block {
+  width: 100%; border-radius: 10px; padding: 0.75rem 0.9rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; margin-top: 0.5rem;
+}
+.face-check-block.busy { color: #64748b; font-size: 0.82rem; font-weight: 600; }
+.face-check-block.apta { background: #f0fdfa; border-color: #99f6e4; }
+.face-check-block.no-apta { background: #fef2f2; border-color: #fecaca; }
+.face-check-motivo { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 700; color: #0f172a; }
+.face-check-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.face-check-list li { display: flex; align-items: flex-start; gap: 0.5rem; }
+.face-check-icon {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 900; color: #fff; margin-top: 0.1rem;
+}
+.face-check-list li.ok .face-check-icon { background: #0d9488; }
+.face-check-list li.fail .face-check-icon { background: #dc2626; }
+.face-check-list li strong { display: block; font-size: 0.8rem; color: #0f172a; }
+.face-check-list li small { display: block; font-size: 0.73rem; color: #64748b; line-height: 1.35; }
+
+.camera-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 1rem;
+}
+.camera-modal-box {
+  background: #fff; border-radius: 14px; padding: 1.25rem;
+  width: 100%; max-width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+.camera-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.camera-modal-header h3 { margin: 0; font-size: 1.05rem; }
+.camera-video, .camera-preview-img {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 10px; background: #0f172a; display: block;
+  transform: scaleX(-1); /* espejo, como una cámara frontal normal */
+}
+.camera-modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.9rem; }
 .profile-hero-info { flex: 1; min-width: 0; }
 .profile-hero-name {
   font-size: 1.35rem; font-weight: 800;
@@ -465,6 +556,12 @@
 .status-chip.missing { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
 
 .mini-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2dd4bf, #0d2137); color: #fff; font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mini-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.user-row-name-btn {
+  display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 0;
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.user-row-name-btn:hover { text-decoration: underline; }
 .action-btns { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .role-select { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-weight: 600; color: #334155; font-family: inherit; outline: none; }
 
@@ -521,6 +618,29 @@
 .doc-status-chip.pending   { background: rgba(245,158,11,0.12); color: #b45309; }
 .doc-status-chip.validated { background: rgba(45,212,191,0.12); color: #0d9488; }
 .doc-status-chip.rejected  { background: rgba(248,113,113,0.12); color: #b91c1c; }
+.doc-status-chip.missing   { background: rgba(148,163,184,0.15); color: #64748b; }
+
+.doc-warning {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+  border-radius: 10px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; font-weight: 600;
+}
+
+.doc-checklist {
+  display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;
+}
+.doc-checklist-row {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+}
+.doc-checklist-label { flex: 1; min-width: 140px; font-size: 0.84rem; font-weight: 600; color: #0f172a; }
+.doc-req-badge {
+  flex-shrink: 0; padding: 0.2rem 0.6rem; border-radius: 20px;
+  font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.doc-req-badge.required { background: rgba(220,38,38,0.1); color: #dc2626; }
+.doc-req-badge.optional { background: rgba(100,116,139,0.12); color: #475569; }
 
 /* ─── Certificados (candidato) ──────────────────────────────────── */
 .cert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
@@ -636,6 +756,17 @@
 }
 .institution-input:focus { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.15); }
 
+/* ─── Aviso de error al cargar usuarios ─────────────────────────── */
+.users-load-error {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+  border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.users-load-error strong { font-weight: 800; }
+.users-load-error span { color: #991b1b; }
+.users-load-error .btn-small { margin-left: auto; }
+
 /* ─── Toolbar: búsqueda y filtro por rol (Usuarios) ────────────── */
 .users-toolbar {
   display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
@@ -719,6 +850,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
+    overflow: hidden;
     background: linear-gradient(135deg, #2dd4bf, #0d2137);
     color: #fff;
     font-size: 0.9rem;

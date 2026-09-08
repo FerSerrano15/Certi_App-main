@@ -90,10 +90,14 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Al escribir una CURP válida, autocompleta fecha de nacimiento, estado de
-   * nacimiento (lugarNacimiento — de la ficha solo interesa el estado, no la
-   * ciudad) y género — pero solo si el candidato no los editó ya a mano
-   * (controles `pristine`), para no pisar una corrección manual.
+   * Al escribir una CURP válida (18 caracteres, formato correcto), la CURP es
+   * la fuente de verdad para fecha de nacimiento, estado de nacimiento
+   * (lugarNacimiento — de la ficha solo interesa el estado, no la ciudad),
+   * género y nacionalidad: estos 4 campos se sobrescriben SIEMPRE que la CURP
+   * cambie a un valor completo y válido (sin importar si el candidato ya
+   * había escrito algo distinto a mano), porque una CURP válida no admite
+   * ambigüedad en estos datos. Mientras la CURP esté incompleta o sea
+   * inválida no se toca nada, para no borrar lo que el candidato ya llenó.
    */
   private watchCurpAutofill() {
     this.form.get('curp')?.valueChanges.subscribe((value: string) => {
@@ -101,18 +105,26 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
       if (!parsed) return;
 
       const fechaCtrl = this.form.get('fechaNacimiento');
-      if (parsed.birthDate && fechaCtrl?.pristine) {
-        fechaCtrl.setValue(parsed.birthDate);
+      if (parsed.birthDate) {
+        fechaCtrl?.setValue(parsed.birthDate);
       }
 
       const lugarCtrl = this.form.get('lugarNacimiento');
-      if (parsed.birthStateName && lugarCtrl?.pristine) {
-        lugarCtrl.setValue(parsed.birthStateName);
+      if (parsed.birthStateName) {
+        lugarCtrl?.setValue(parsed.birthStateName);
       }
 
       const generoCtrl = this.form.get('genero');
-      if (parsed.sex && generoCtrl?.pristine) {
-        generoCtrl.setValue(parsed.sex === 'H' ? 'Hombre' : 'Mujer');
+      if (parsed.sex) {
+        generoCtrl?.setValue(parsed.sex === 'H' ? 'Hombre' : 'Mujer');
+      }
+
+      // La nacionalidad solo se infiere cuando la CURP indica una entidad
+      // federativa real de nacimiento; si es "Nacido en el Extranjero" (NE)
+      // no se asume nada y se deja lo que el candidato haya puesto.
+      const nacionalidadCtrl = this.form.get('nacionalidad');
+      if (parsed.birthStateCode && parsed.birthStateCode !== 'NE') {
+        nacionalidadCtrl?.setValue('Mexicana');
       }
     });
   }

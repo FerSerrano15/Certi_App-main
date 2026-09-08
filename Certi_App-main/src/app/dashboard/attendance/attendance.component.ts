@@ -37,7 +37,7 @@ export class AttendanceComponent implements OnInit {
     this.loading.set(true);
     const groups = await this.cSvc.getGroups();
     // Instructores solo ven sus grupos; admins ven todo
-    this.groups.set(groups.filter(g => g.status !== 'CANCELADO'));
+    this.groups.set(groups.filter(g => g.status !== 'cancelado'));
     this.loading.set(false);
   }
 

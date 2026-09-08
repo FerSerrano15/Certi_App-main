@@ -42,7 +42,7 @@ export class VerifyCertificateComponent implements OnInit {
 
   statusLabel(status?: string): string {
     const map: Record<string, string> = {
-      active: 'Vigente', expired: 'Vencido', revoked: 'Revocado',
+      vigente: 'Vigente', vencido: 'Vencido', revocado: 'Revocado',
     };
     return status ? (map[status] ?? status) : '';
   }
