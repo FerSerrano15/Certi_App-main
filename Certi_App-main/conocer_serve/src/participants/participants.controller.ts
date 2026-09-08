@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateParticipantDto } from './dto/create-participant.dto';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null; email: string };
+  user: { id: string; role: string; email: string };
 }
 
 @Controller('participants')

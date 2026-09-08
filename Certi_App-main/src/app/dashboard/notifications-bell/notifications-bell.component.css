@@ -1,0 +1,104 @@
+.nb-wrap {
+  position: relative;
+  font-family: 'Inter', sans-serif;
+}
+.nb-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+}
+.nb-bell:hover { background: rgba(255, 255, 255, 0.14); }
+.nb-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0d2137;
+}
+
+.nb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.nb-dropdown {
+  /* position: fixed (no absolute) a propósito: el sidebar tiene
+     overflow-y: auto, lo que fuerza overflow-x: auto en el mismo eje y
+     recorta cualquier hijo `absolute` que se salga de su ancho. fixed lo
+     posiciona relativo al viewport, calculado en el componente a partir
+     de getBoundingClientRect() de la campana. */
+  position: fixed;
+  width: 340px;
+  max-width: 90vw;
+  max-height: 420px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+  z-index: 201;
+  color: #0f172a;
+}
+.nb-dropdown-header {
+  padding: 0.9rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.nb-empty {
+  padding: 1.75rem 1.1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+.nb-list { display: flex; flex-direction: column; }
+.nb-item {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.nb-item.unread { background: #f0fdfa; }
+.nb-item-body { display: flex; flex-direction: column; gap: 0.15rem; }
+.nb-item-title { font-size: 0.85rem; font-weight: 700; color: #0f172a; }
+.nb-item-msg { font-size: 0.8rem; color: #475569; line-height: 1.4; }
+.nb-item-date { font-size: 0.72rem; color: #94a3b8; margin-top: 0.1rem; }
+.nb-item-actions { display: flex; gap: 0.5rem; }
+.nb-item-btn {
+  background: #0d9488;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.nb-item-btn.ghost {
+  background: none;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+.nb-item-btn:disabled { opacity: 0.6; cursor: default; }

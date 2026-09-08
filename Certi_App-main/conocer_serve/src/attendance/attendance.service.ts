@@ -6,14 +6,14 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { BulkAttendanceDto, CreateAttendanceDto } from './dto/create-attendance.dto';
 
-type JwtUser = { id: string; role: string; institution_id: string | null };
+type JwtUser = { id: string; role: string };
 
 @Injectable()
 export class AttendanceService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  private requireInstructor(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR', 'INSTRUCTOR'].includes(user.role)) {
+  private requireEvaluator(user: JwtUser) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'EVALUADOR'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
@@ -23,7 +23,7 @@ export class AttendanceService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async listBySession(sessionId: string, user: JwtUser) {
-    this.requireInstructor(user);
+    this.requireEvaluator(user);
     const { data, error } = await this.supabase.admin
       .from('attendance')
       .select(`
@@ -46,7 +46,7 @@ export class AttendanceService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async initSessionAttendance(sessionId: string, user: JwtUser) {
-    this.requireInstructor(user);
+    this.requireEvaluator(user);
 
     // 1. Obtener el group_id de la sesión
     const { data: session } = await this.supabase.admin
@@ -90,7 +90,7 @@ export class AttendanceService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async bulkUpsert(dto: BulkAttendanceDto, user: JwtUser) {
-    this.requireInstructor(user);
+    this.requireEvaluator(user);
 
     const rows = dto.records.map(r => ({
       session_id:    dto.session_id,
@@ -113,7 +113,7 @@ export class AttendanceService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async toggle(sessionId: string, enrollmentId: string, user: JwtUser) {
-    this.requireInstructor(user);
+    this.requireEvaluator(user);
 
     const { data: existing } = await this.supabase.admin
       .from('attendance')
@@ -149,7 +149,7 @@ export class AttendanceService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async recalculateAttendance(groupId: string, user: JwtUser) {
-    this.requireInstructor(user);
+    this.requireEvaluator(user);
 
     // Total de sesiones del grupo
     const { data: sessions } = await this.supabase.admin

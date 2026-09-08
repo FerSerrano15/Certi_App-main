@@ -7,10 +7,10 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 
-type JwtUser = { id: string; role: string; institution_id: string | null };
+type JwtUser = { id: string; role: string };
 
-/** Código reservado que representa la credencial general para poder instruir. */
-export const INSTRUCTOR_CREDENTIAL_TYPE = 'INSTRUCTOR_CREDENTIAL';
+/** Código reservado que representa la credencial general para poder evaluar. */
+export const EVALUATOR_CREDENTIAL_TYPE = 'EVALUATOR_CREDENTIAL';
 export const STANDARD_CREDENTIAL_TYPE = 'STANDARD';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class CertificationsService {
   constructor(private readonly supabase: SupabaseService) {}
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
@@ -57,7 +57,6 @@ export class CertificationsService {
         issued_at: dto.issued_at ?? null,
         expires_at: dto.expires_at ?? null,
         certificate_url: dto.certificate_url ?? null,
-        institution_id: user.institution_id,
       })
       .select('*')
       .single();
@@ -94,12 +93,12 @@ export class CertificationsService {
     return new Date(cert.expires_at) >= new Date();
   }
 
-  /** user_ids que cuentan con la credencial general de instructor vigente. */
-  async getUsersWithInstructorCredential(): Promise<Set<string>> {
+  /** user_ids que cuentan con la credencial general de evaluador vigente. */
+  async getUsersWithEvaluatorCredential(): Promise<Set<string>> {
     const { data } = await this.supabase.admin
       .from('certifications')
       .select('user_id, status, expires_at')
-      .eq('type', INSTRUCTOR_CREDENTIAL_TYPE);
+      .eq('type', EVALUATOR_CREDENTIAL_TYPE);
     return new Set(
       (data ?? []).filter((c) => this.isActive(c)).map((c: { user_id: string }) => c.user_id),
     );

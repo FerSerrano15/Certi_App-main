@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 
-export type CertificationType = 'INSTRUCTOR_CREDENTIAL' | 'STANDARD';
+export type CertificationType = 'EVALUATOR_CREDENTIAL' | 'STANDARD';
 export type CertificationStatus = 'vigente' | 'vencido' | 'revocado';
 
 export interface Certification {
@@ -16,7 +16,6 @@ export interface Certification {
   issued_at: string | null;
   expires_at: string | null;
   certificate_url: string | null;
-  institution_id: string | null;
   created_at: string;
 }
 

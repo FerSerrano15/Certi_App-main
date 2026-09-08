@@ -2,9 +2,6 @@ import { IsString, IsEmail, IsOptional, IsUUID, MinLength } from 'class-validato
 
 export class CreateParticipantDto {
   @IsOptional() @IsUUID()
-  institution_id?: string;
-
-  @IsOptional() @IsUUID()
   user_id?: string;
 
   @IsString() @MinLength(3)

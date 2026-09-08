@@ -1,0 +1,31 @@
+<div class="ep-wrap">
+  <label class="ep-label">Buscar estándar de competencia</label>
+  <div class="ep-search-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input
+      class="ep-search-input"
+      type="text"
+      autocomplete="off"
+      placeholder="Escribe el código o el nombre del estándar…"
+      [value]="query()"
+      (input)="onQueryChange($any($event.target).value)"
+    >
+  </div>
+
+  <div class="ep-results">
+    @if (loading()) {
+      <div class="ep-state">Buscando…</div>
+    } @else if (results().length === 0 && searched()) {
+      <div class="ep-state">No se encontraron estándares con ese criterio.</div>
+    } @else {
+      @for (e of results(); track e.id) {
+        <button type="button" class="ep-item" (click)="pick(e)">
+          <span class="ep-item-codigo">{{ e.codigo }}</span>
+          <span class="ep-item-nombre">{{ e.nombre }}</span>
+        </button>
+      }
+    }
+  </div>
+</div>

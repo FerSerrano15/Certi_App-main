@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 
 export interface AuditLogEntry {
   id: number;
-  institution_id: string | null;
   user_id: string | null;
   action: string;
   entity: string | null;

@@ -4,8 +4,8 @@ export class CreateCertificationDto {
   @IsUUID()
   user_id: string;
 
-  @IsIn(['INSTRUCTOR_CREDENTIAL', 'STANDARD'])
-  type: 'INSTRUCTOR_CREDENTIAL' | 'STANDARD';
+  @IsIn(['EVALUATOR_CREDENTIAL', 'STANDARD'])
+  type: 'EVALUATOR_CREDENTIAL' | 'STANDARD';
 
   // Obligatorio cuando type = 'STANDARD'. Debe coincidir con courses.code (ej: 'EC0217').
   @IsOptional()

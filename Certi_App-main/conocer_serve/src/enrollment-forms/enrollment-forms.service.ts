@@ -6,7 +6,7 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateEnrollmentFormDto } from './dto/create-enrollment-form.dto';
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN_INSTITUCION'];
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
 
 @Injectable()
 export class EnrollmentFormsService {
@@ -130,10 +130,7 @@ export class EnrollmentFormsService {
   // ──────────────────────────────────────────────────────────────────────────
   // GET all forms with participant info — para la vista de admin
   // ──────────────────────────────────────────────────────────────────────────
-  async getAllWithParticipant(
-    requestingUserId: string,
-    institutionId?: string,
-  ) {
+  async getAllWithParticipant(requestingUserId: string) {
     await this.requireAdmin(requestingUserId);
 
     const { data, error } = await this.supabase.admin
@@ -153,8 +150,7 @@ export class EnrollmentFormsService {
             id,
             full_name,
             email,
-            national_id,
-            institution_id
+            national_id
           ),
           groups (
             id,
@@ -167,17 +163,7 @@ export class EnrollmentFormsService {
       .order('submitted_at', { ascending: false });
 
     if (error) throw new Error(error.message);
-
-    let result = data ?? [];
-
-    // Filtro por institución (post-query para relaciones anidadas)
-    if (institutionId) {
-      result = result.filter(
-        (f: any) => f.enrollments?.participants?.institution_id === institutionId,
-      );
-    }
-
-    return result;
+    return data ?? [];
   }
 
   // ──────────────────────────────────────────────────────────────────────────

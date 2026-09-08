@@ -11,7 +11,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { ParticipantsService } from '../participants/participants.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
-type JwtUser = { id: string; role: string; institution_id: string | null; email: string };
+type JwtUser = { id: string; role: string; email: string };
 
 @Injectable()
 export class CertificatesService {
@@ -23,7 +23,7 @@ export class CertificatesService {
   ) {}
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
@@ -39,14 +39,14 @@ export class CertificatesService {
       .from('enrollments')
       .select(`
         id, group_id, participant_id, final_grade, attendance_percentage, status,
-        groups ( id, course_id, institution_id, courses ( id, name, code, passing_grade, min_attendance, validity_months ) )
+        groups ( id, course_id, courses ( id, name, code, passing_grade, min_attendance, validity_months ) )
       `)
       .eq('id', enrollmentId)
       .single<{
         id: string; group_id: string; participant_id: string;
         final_grade: number | null; attendance_percentage: number | null; status: string;
         groups: {
-          id: string; course_id: string; institution_id: string | null;
+          id: string; course_id: string;
           courses: {
             id: string; name: string; code: string;
             passing_grade: number; min_attendance: number; validity_months: number | null;
@@ -97,7 +97,6 @@ export class CertificatesService {
     const { data, error } = await this.supabase.admin
       .from('certificates')
       .insert({
-        institution_id: group.institution_id,
         participant_id: enrollment.participant_id,
         course_id: course.id,
         enrollment_id: enrollment.id,
@@ -116,7 +115,6 @@ export class CertificatesService {
 
     await this.auditLogs.log({
       user_id: user.id,
-      institution_id: group.institution_id,
       action: 'CERTIFICATE_ISSUED',
       entity: 'certificates',
       entityid: data.id,
@@ -155,16 +153,13 @@ export class CertificatesService {
       .order('issued_at', { ascending: false });
     if (filters.participant_id) q = q.eq('participant_id', filters.participant_id);
     if (filters.course_id) q = q.eq('course_id', filters.course_id);
-    if (user.role !== 'SUPER_ADMIN' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
     const { data, error } = await q;
     if (error) throw new NotFoundException(error.message);
     return data ?? [];
   }
 
   async listMine(user: JwtUser) {
-    if (user.role !== 'OPERADOR') {
+    if (user.role !== 'CANDIDATO') {
       throw new ForbiddenException('Esta acción es solo para candidatos.');
     }
     const participant = await this.participants.resolveOrCreateSelfParticipant(user);
@@ -193,7 +188,6 @@ export class CertificatesService {
 
     await this.auditLogs.log({
       user_id: user.id,
-      institution_id: user.institution_id,
       action: 'CERTIFICATE_REVOKED',
       entity: 'certificates',
       entityid: id,
@@ -221,8 +215,7 @@ export class CertificatesService {
         .select(`
           folio, status, issued_at, expires_at, final_grade, attendance_percentage,
           participants ( full_name ),
-          courses ( name, code ),
-          institutions ( name )
+          courses ( name, code )
         `)
         .or(`folio.eq.${cleanRef},verification_token.eq.${cleanRef}`)
         .maybeSingle<{
@@ -230,7 +223,6 @@ export class CertificatesService {
           final_grade: number | null; attendance_percentage: number | null;
           participants: { full_name: string } | null;
           courses: { name: string; code: string } | null;
-          institutions: { name: string } | null;
         }>();
 
       if (data) {
@@ -243,7 +235,6 @@ export class CertificatesService {
           participant_name: data.participants?.full_name ?? null,
           course_name: data.courses?.name ?? null,
           course_code: data.courses?.code ?? null,
-          institution_name: data.institutions?.name ?? null,
           issued_at: data.issued_at,
           expires_at: data.expires_at,
           final_grade: data.final_grade,

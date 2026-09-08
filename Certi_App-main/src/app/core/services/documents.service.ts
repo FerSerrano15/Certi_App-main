@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 
 export interface CandidateDocument {
   id: string;
-  institution_id: string | null;
   participant_id: string | null;
   type: string;
   file_path: string;

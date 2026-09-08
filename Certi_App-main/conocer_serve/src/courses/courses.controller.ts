@@ -9,7 +9,7 @@ import { CreateProgramDto } from './dto/create-program.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null };
+  user: { id: string; role: string };
 }
 
 @Controller()
@@ -46,9 +46,9 @@ export class CoursesController {
   @Get('courses/:id')
   getCourse(@Param('id', ParseUUIDPipe) id: string) { return this.svc.getCourse(id); }
 
-  @Get('courses/:id/eligible-instructors')
-  getEligibleInstructors(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
-    return this.svc.getEligibleInstructors(id, req.user);
+  @Get('courses/:id/eligible-evaluators')
+  getEligibleEvaluators(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
+    return this.svc.getEligibleEvaluators(id, req.user);
   }
 
   @Post('courses')

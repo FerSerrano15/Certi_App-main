@@ -8,7 +8,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CreateParticipantDto } from './dto/create-participant.dto';
 
-type JwtUser = { id: string; role: string; institution_id: string | null; email: string };
+type JwtUser = { id: string; role: string; email: string };
 
 @Injectable()
 export class ParticipantsService {
@@ -17,44 +17,16 @@ export class ParticipantsService {
     private readonly auditLogs: AuditLogsService,
   ) {}
 
-  private requireAtLeastCoordinator(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR', 'INSTRUCTOR'].includes(user.role)) {
+  private requireAtLeastEvaluator(user: JwtUser) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'EVALUADOR'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
-  }
-
-  private async resolveInstitutionId(user: JwtUser, dto?: { institution_id?: string }): Promise<string> {
-    if (dto?.institution_id) return dto.institution_id;
-    if (user?.institution_id) return user.institution_id;
-
-    const { data } = await this.supabase.admin
-      .from('institutions')
-      .select('id')
-      .limit(1)
-      .maybeSingle<{ id: string }>();
-
-    if (data?.id) return data.id;
-
-    const { data: newInst, error } = await this.supabase.admin
-      .from('institutions')
-      .insert({
-        name: 'Institución Principal',
-        slug: `inst-principal-${Date.now()}`,
-        is_active: true,
-      })
-      .select('id')
-      .single<{ id: string }>();
-
-    if (error || !newInst?.id) {
-      throw new ConflictException('No existe ninguna institución en la base de datos y no se pudo crear la por defecto.');
-    }
-    return newInst.id;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -67,11 +39,9 @@ export class ParticipantsService {
       .select('*')
       .order('full_name');
 
-    // OPERADOR sólo ve su propio registro de participante
-    if (user.role === 'OPERADOR') {
+    // CANDIDATO sólo ve su propio registro de participante
+    if (user.role === 'CANDIDATO') {
       q = q.or(`user_id.eq.${user.id},email.eq.${user.email}`);
-    } else if (user.role !== 'SUPER_ADMIN' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
     }
 
     if (search) {
@@ -93,7 +63,7 @@ export class ParticipantsService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async getEligibleForGroup(groupId: string, user: JwtUser) {
-    this.requireAtLeastCoordinator(user);
+    this.requireAtLeastEvaluator(user);
 
     const { data: group, error: groupErr } = await this.supabase.admin
       .from('groups')
@@ -110,11 +80,8 @@ export class ParticipantsService {
       (currentEnrollments ?? []).map((e: { participant_id: string }) => e.participant_id),
     );
 
-    let q = this.supabase.admin.from('participants').select('*').order('full_name');
-    if (user.role !== 'SUPER_ADMIN' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
-    const { data: allParticipants, error } = await q;
+    const { data: allParticipants, error } = await this.supabase.admin
+      .from('participants').select('*').order('full_name');
     if (error) throw new NotFoundException(error.message);
 
     const candidates = (allParticipants ?? []).filter(
@@ -159,16 +126,16 @@ export class ParticipantsService {
   // ════════════════════════════════════════════════════════════════════════════
   //  RESOLVER/CREAR EL REGISTRO PROPIO DE CANDIDATO (autoservicio)
   //  Usado por EnrollmentsService, DocumentsService y CertificatesService
-  //  cuando un OPERADOR realiza una acción sobre sí mismo (inscribirse,
+  //  cuando un CANDIDATO realiza una acción sobre sí mismo (inscribirse,
   //  subir un documento, etc.) y aún no tiene fila en `participants`.
   // ════════════════════════════════════════════════════════════════════════════
 
   async resolveOrCreateSelfParticipant(user: JwtUser) {
     const { data: profile, error: profileErr } = await this.supabase.admin
       .from('users')
-      .select('email, full_name, phone, institution_id')
+      .select('email, full_name, phone')
       .eq('id', user.id)
-      .single<{ email: string; full_name: string; phone: string | null; institution_id: string | null }>();
+      .single<{ email: string; full_name: string; phone: string | null }>();
     if (profileErr || !profile) throw new NotFoundException('Usuario no encontrado.');
 
     const { data: existing } = await this.supabase.admin
@@ -189,7 +156,6 @@ export class ParticipantsService {
     const { data: newParticipant, error: createErr } = await this.supabase.admin
       .from('participants')
       .insert({
-        institution_id: profile.institution_id ?? user.institution_id,
         user_id: user.id,
         full_name: profile.full_name,
         email: profile.email,
@@ -204,7 +170,7 @@ export class ParticipantsService {
   }
 
   async getParticipant(id: string, user: JwtUser) {
-    this.requireAtLeastCoordinator(user);
+    this.requireAtLeastEvaluator(user);
     const { data, error } = await this.supabase.admin
       .from('participants')
       .select('*')
@@ -220,12 +186,10 @@ export class ParticipantsService {
 
   async createParticipant(dto: CreateParticipantDto, user: JwtUser) {
     this.requireAdmin(user);
-    const institutionId = await this.resolveInstitutionId(user, dto);
 
     const { data, error } = await this.supabase.admin
       .from('participants')
       .insert({
-        institution_id: institutionId,
         user_id:        dto.user_id ?? null,
         full_name:      dto.full_name,
         email:          dto.email,
@@ -267,7 +231,7 @@ export class ParticipantsService {
       .eq('id', id);
     if (error) throw new NotFoundException(error.message);
     await this.auditLogs.log({
-      user_id: user.id, institution_id: user.institution_id,
+      user_id: user.id,
       action: 'PARTICIPANT_DELETED', entity: 'participants', entityid: id,
     });
     return { message: 'Participante eliminado.' };

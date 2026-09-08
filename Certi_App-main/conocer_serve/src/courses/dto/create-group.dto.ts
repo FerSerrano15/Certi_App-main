@@ -11,10 +11,7 @@ export class CreateGroupDto {
   name: string;
 
   @IsOptional() @IsUUID()
-  instructor_id?: string;
-
-  @IsOptional() @IsUUID()
-  institution_id?: string;
+  evaluator_id?: string;
 
   @IsOptional() @IsDateString()
   start_date?: string;

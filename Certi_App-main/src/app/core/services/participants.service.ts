@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 
 export interface Participant {
   id: string;
-  institution_id: string | null;
   user_id: string | null;
   full_name: string;
   email: string;
@@ -23,6 +22,9 @@ export interface Enrollment {
   documents_validated: boolean;
   status: 'enrolled' | 'completed' | 'dropped';
   enrolled_at: string;
+  competency_result?: 'competente' | 'aun_no_competente' | null;
+  evaluated_by?: string | null;
+  evaluated_at?: string | null;
   participants?: { id: string; full_name: string; email: string; national_id: string | null } | null;
   groups?: { id: string; name: string; course_id: string; courses?: { id: string; name: string; code: string } | null } | null;
 }

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength } from 'class-validator';
 
 export class CreateProgramDto {
   @IsString() @MinLength(3)
@@ -6,7 +6,4 @@ export class CreateProgramDto {
 
   @IsOptional() @IsString()
   description?: string;
-
-  @IsOptional() @IsUUID()
-  institution_id?: string;
 }

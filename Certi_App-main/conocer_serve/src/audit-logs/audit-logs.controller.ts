@@ -3,7 +3,7 @@ import { AuditLogsService } from './audit-logs.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null };
+  user: { id: string; role: string };
 }
 
 @Controller('audit-logs')

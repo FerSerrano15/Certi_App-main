@@ -60,10 +60,11 @@ export class ApiService {
 
   // ─── DELETE ───────────────────────────────────────────────────────────────
 
-  delete<T>(path: string, token?: string | null): Observable<T> {
+  delete<T>(path: string, token?: string | null, body?: unknown): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${path}`, {
       headers: this.headers(token),
       withCredentials: true,
+      ...(body !== undefined ? { body } : {}),
     });
   }
 

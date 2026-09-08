@@ -30,7 +30,6 @@
             <div><span class="verify-label">Folio</span><span class="verify-value">{{ result()?.folio }}</span></div>
             <div><span class="verify-label">Candidato</span><span class="verify-value">{{ result()?.participant_name }}</span></div>
             <div><span class="verify-label">Curso / Estándar</span><span class="verify-value">{{ result()?.course_name }} ({{ result()?.course_code }})</span></div>
-            <div><span class="verify-label">Institución</span><span class="verify-value">{{ result()?.institution_name }}</span></div>
             <div><span class="verify-label">Emitido</span><span class="verify-value">{{ result()?.issued_at | date:'dd/MM/yyyy' }}</span></div>
             @if (result()?.expires_at) {
               <div><span class="verify-label">Vigente hasta</span><span class="verify-value">{{ result()?.expires_at | date:'dd/MM/yyyy' }}</span></div>

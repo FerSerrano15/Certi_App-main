@@ -7,15 +7,14 @@ import { ApiService } from './api.service';
 // Roles que coinciden con public.users en Supabase
 export type UserRole =
   | 'SUPER_ADMIN'
-  | 'ADMIN_INSTITUCION'
-  | 'COORDINADOR'
-  | 'INSTRUCTOR'
-  | 'OPERADOR';
+  | 'ADMIN'
+  | 'EVALUADOR'
+  | 'CANDIDATO';
 
 // Tipo que coincide con la respuesta del backend (SafeUser)
 export interface User {
   id: string;
-  institution_id: string | null;
+  institution_name: string | null;
   email: string;
   full_name: string;
   role: UserRole;
@@ -23,6 +22,9 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Ficha de Registro general de la cuenta (no ligada a una certificación en
+  // particular) — se llena una sola vez, justo después de crear la cuenta.
+  ficha_registro_submitted_at?: string | null;
 }
 
 interface AuthResponse {
@@ -50,20 +52,22 @@ export class AuthService {
   userRole = computed(() => this.currentUser()?.role ?? null);
 
   isSuperAdmin = computed(() => this.currentUser()?.role === 'SUPER_ADMIN');
-  isAdminInstitucion = computed(() => this.currentUser()?.role === 'ADMIN_INSTITUCION');
-  isCoordinador = computed(() => this.currentUser()?.role === 'COORDINADOR');
-  isInstructor = computed(() => this.currentUser()?.role === 'INSTRUCTOR');
-  isOperador = computed(() => this.currentUser()?.role === 'OPERADOR');
+  isAdmin      = computed(() => this.currentUser()?.role === 'ADMIN');
+  isEvaluador  = computed(() => this.currentUser()?.role === 'EVALUADOR');
+  isCandidato  = computed(() => this.currentUser()?.role === 'CANDIDATO');
 
   /** Puede gestionar usuarios (admin o superior) */
   canManageUsers = computed(() =>
-    ['SUPER_ADMIN', 'ADMIN_INSTITUCION'].includes(this.currentUser()?.role ?? '')
+    ['SUPER_ADMIN', 'ADMIN'].includes(this.currentUser()?.role ?? '')
   );
 
   /** Puede ver reportes y gestión de grupos */
   canManageGroups = computed(() =>
-    ['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(this.currentUser()?.role ?? '')
+    ['SUPER_ADMIN', 'ADMIN'].includes(this.currentUser()?.role ?? '')
   );
+
+  /** La ficha de registro general ya fue completada */
+  fichaRegistroCompletada = computed(() => !!this.currentUser()?.ficha_registro_submitted_at);
 
   constructor() {
     this.isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -136,7 +140,7 @@ export class AuthService {
     password: string;
     phone?: string;
     role?: UserRole;
-    institution_id?: string;
+    institution_name?: string;
   }): Promise<{ success: boolean; error?: string }> {
     if (!this.isBrowser) return { success: false, error: 'No disponible en servidor.' };
     this.isLoading.set(true);
@@ -209,6 +213,118 @@ export class AuthService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  // ─── Ficha de Registro general (una sola vez por cuenta) ──────────────────
+
+  /** Obtiene la propia Ficha de Registro del usuario autenticado (cualquier rol). */
+  async getMyFichaRegistro(): Promise<{
+    full_name: string;
+    ficha_registro_data: Record<string, any> | null;
+    ficha_registro_submitted_at: string | null;
+  } | null> {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      return await firstValueFrom(
+        this.api.get<{
+          full_name: string;
+          ficha_registro_data: Record<string, any> | null;
+          ficha_registro_submitted_at: string | null;
+        }>('/auth/me/ficha-registro', token)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /** Obtiene la Ficha de Registro completa de un usuario (solo admin). */
+  async getFichaRegistro(userId: string): Promise<{
+    full_name: string;
+    ficha_registro_data: Record<string, any> | null;
+    ficha_registro_submitted_at: string | null;
+  } | null> {
+    const token = this.getToken();
+    if (!token || !this.canManageUsers()) return null;
+    try {
+      return await firstValueFrom(
+        this.api.get<{
+          full_name: string;
+          ficha_registro_data: Record<string, any> | null;
+          ficha_registro_submitted_at: string | null;
+        }>(`/users/${userId}/ficha-registro`, token)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async submitFichaRegistro(formData: Record<string, any>): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const user = await firstValueFrom(
+        this.api.patch<User>('/auth/me/ficha-registro', { form_data: formData }, token)
+      );
+      this.saveSession(user);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ─── Cambio de contraseña propia ───────────────────────────────────────────────
+
+  async changeMyPassword(
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const token = this.getToken();
+    if (!token) return { success: false, message: 'No autenticado.' };
+    try {
+      const res = await firstValueFrom(
+        this.api.post<{ message: string }>(
+          '/auth/me/change-password',
+          { current_password: currentPassword, new_password: newPassword, confirm_password: confirmPassword },
+          token,
+        )
+      );
+      return { success: true, message: res.message ?? 'Contraseña actualizada correctamente.' };
+    } catch (err: unknown) {
+      return { success: false, message: this.extractError(err) };
+    }
+  }
+
+  // ─── Restablecer contraseña de otro usuario (solo SUPER_ADMIN) ──────────────────────
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<boolean> {
+    const token = this.getToken();
+    if (!token || !this.isSuperAdmin()) return false;
+    try {
+      await firstValueFrom(
+        this.api.patch(`/users/${userId}/reset-password`, { new_password: newPassword }, token)
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ─── Eliminar usuario (solo SUPER_ADMIN, requiere su propia contraseña) ────
+
+  async deleteUser(userId: string, password: string): Promise<{ success: boolean; message: string }> {
+    const token = this.getToken();
+    if (!token) return { success: false, message: 'No autenticado.' };
+    if (!this.isSuperAdmin()) return { success: false, message: 'No tienes permisos para esta acción.' };
+    try {
+      const res = await firstValueFrom(
+        this.api.delete<{ message: string }>(`/users/${userId}`, token, { password })
+      );
+      return { success: true, message: res.message ?? 'Usuario eliminado correctamente.' };
+    } catch (err: unknown) {
+      return { success: false, message: this.extractError(err) };
     }
   }
 

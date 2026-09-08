@@ -1,0 +1,121 @@
+.fa-wrap {
+  font-family: 'Inter', sans-serif;
+}
+.fa-header { margin-bottom: 1.25rem; }
+.fa-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+.fa-sub {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+
+.fa-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.fa-search {
+  flex: 1 1 260px;
+  padding: 0.65rem 1rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+}
+.fa-search:focus { border-color: #2dd4bf; }
+
+.fa-status-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.fa-chip {
+  background: #f1f5f9;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+.fa-chip.active {
+  background: #0d9488;
+  color: #fff;
+}
+
+.fa-empty {
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.table-wrap { overflow-x: auto; }
+.fa-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fa-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.fa-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+.fa-candidato { display: flex; flex-direction: column; gap: 0.1rem; }
+.fa-candidato-nombre { font-weight: 700; color: #0f172a; }
+.fa-candidato-email { font-size: 0.75rem; color: #94a3b8; }
+.fa-estandar-codigo {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0d9488;
+}
+.fa-estandar-nombre { display: block; color: #334155; }
+
+.fa-status-select {
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  background: #f8fafc;
+}
+.fa-status-select.status-pendiente { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+.fa-status-select.status-aprobada  { color: #047857; border-color: #6ee7b7; background: #ecfdf5; }
+.fa-status-select.status-rechazada { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
+
+.fa-btn {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fa-btn:hover { background: #e2e8f0; }
+.fa-btn:disabled { opacity: 0.6; cursor: default; }

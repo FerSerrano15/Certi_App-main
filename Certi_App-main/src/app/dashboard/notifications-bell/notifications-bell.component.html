@@ -1,0 +1,42 @@
+<div class="nb-wrap">
+  <button #bellBtn class="nb-bell" (click)="toggle()" aria-label="Notificaciones">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    @if (unreadCount() > 0) {
+      <span class="nb-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="nb-backdrop" (click)="close()"></div>
+    <div class="nb-dropdown" [style.top.px]="dropdownPos().top" [style.left.px]="dropdownPos().left">
+      <div class="nb-dropdown-header">Notificaciones</div>
+
+      @if (loading()) {
+        <div class="nb-empty">Cargando…</div>
+      } @else if (notifications().length === 0) {
+        <div class="nb-empty">Sin notificaciones por ahora.</div>
+      } @else {
+        <div class="nb-list">
+          @for (n of notifications(); track n.id) {
+            <div class="nb-item" [class.unread]="!n.read">
+              <div class="nb-item-body">
+                <span class="nb-item-title">{{ n.title }}</span>
+                <span class="nb-item-msg">{{ n.message }}</span>
+                <span class="nb-item-date">{{ n.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="nb-item-actions">
+                <button class="nb-item-btn" (click)="verSolicitud(n, $event)">Ver solicitud</button>
+                @if (!n.read) {
+                  <button class="nb-item-btn ghost" (click)="markRead(n, $event)">Marcar leída</button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

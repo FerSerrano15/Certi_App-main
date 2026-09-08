@@ -1,11 +1,10 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
-type JwtUser = { id: string; role: string; institution_id: string | null };
+type JwtUser = { id: string; role: string };
 
 export interface AuditLogEntry {
   user_id?: string | null;
-  institution_id?: string | null;
   action: string;
   entity?: string;
   entityid?: string;
@@ -26,7 +25,6 @@ export class AuditLogsService {
     try {
       const { error } = await this.supabase.admin.from('audit_logs').insert({
         user_id: entry.user_id ?? null,
-        institution_id: entry.institution_id ?? null,
         action: entry.action,
         entity: entry.entity ?? null,
         entityid: entry.entityid ?? null,

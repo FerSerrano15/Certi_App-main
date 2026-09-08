@@ -1,0 +1,74 @@
+.ep-wrap {
+  font-family: 'Inter', sans-serif;
+}
+.ep-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+.ep-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  color: #64748b;
+  transition: border-color 0.15s ease;
+}
+.ep-search-box:focus-within {
+  border-color: #2dd4bf;
+}
+.ep-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: transparent;
+}
+.ep-results {
+  margin-top: 0.75rem;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+.ep-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s ease;
+}
+.ep-item:last-child { border-bottom: none; }
+.ep-item:hover { background: #f0fdfa; }
+.ep-item-codigo {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0d9488;
+  letter-spacing: 0.02em;
+}
+.ep-item-nombre {
+  font-size: 0.85rem;
+  color: #334155;
+  margin-top: 0.15rem;
+}
+.ep-state {
+  padding: 1.25rem 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}

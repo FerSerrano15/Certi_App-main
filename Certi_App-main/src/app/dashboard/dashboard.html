@@ -11,7 +11,14 @@
       </svg>
     </button>
     <a routerLink="/" class="dash-logo mobile">
-      <svg width="24" height="24" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#2dd4bf"/><path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="14" r="2.5" fill="white"/></svg>
+      <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="6" fill="#2dd4bf" />
+        <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5"
+          stroke-linecap="round" />
+        <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5"
+          stroke-linecap="round" />
+        <circle cx="14" cy="14" r="2.5" fill="white" />
+      </svg>
       <span>CertiApp</span>
     </a>
     <div class="mobile-avatar" (click)="toggleMobileMenu()">{{ getInitial() }}</div>
@@ -19,14 +26,21 @@
 
   <!-- Mobile Backdrop Overlay -->
   @if (mobileMenuOpen()) {
-    <div class="dash-sidebar-overlay" (click)="closeMobileMenu()"></div>
+  <div class="dash-sidebar-overlay" (click)="closeMobileMenu()"></div>
   }
 
   <!-- Sidebar (Desktop & Mobile Slide-Out Drawer) -->
   <aside class="dash-sidebar" [class.mobile-open]="mobileMenuOpen()">
     <div class="sidebar-top-row">
       <a routerLink="/" class="dash-logo">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#2dd4bf"/><path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="14" r="2.5" fill="white"/></svg>
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#2dd4bf" />
+          <path d="M8 14C8 10.686 10.686 8 14 8C16.21 8 18.148 9.183 19.196 10.95" stroke="white" stroke-width="2.5"
+            stroke-linecap="round" />
+          <path d="M20 14C20 17.314 17.314 20 14 20C11.79 20 9.852 18.817 8.804 17.05" stroke="white" stroke-width="2.5"
+            stroke-linecap="round" />
+          <circle cx="14" cy="14" r="2.5" fill="white" />
+        </svg>
         <span>CertiApp</span>
       </a>
       <button class="mobile-close-btn" (click)="closeMobileMenu()" aria-label="Cerrar menú">✕</button>
@@ -38,19 +52,109 @@
         <span class="dash-user-name">{{ user?.full_name }}</span>
         <span class="dash-role-badge" [class]="role ?? ''">{{ getRoleLabel(role ?? '') }}</span>
       </div>
+      @if (role === 'ADMIN') {
+      <app-notifications-bell (openSolicitudes)="setTab('solicitudes')"></app-notifications-bell>
+      }
     </div>
 
     <nav class="dash-nav">
       @for (item of navItems; track item.id) {
-        <button class="dash-nav-item" [class.active]="activeTab() === item.id" (click)="setTab(item.id)">
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </button>
+      <button class="dash-nav-item" [class.active]="activeTab() === item.id" (click)="setTab(item.id)">
+        <span class="nav-icon">
+          @switch (item.id) {
+          @case ('inicio') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M3 11.5 12 4l9 7.5" />
+            <path d="M5 10v10h14V10" />
+          </svg>
+          }
+          @case ('ficha-registro') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          }
+          @case ('perfil') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+          </svg>
+          }
+          @case ('asistencia') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M9 12l2 2 4-4" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+          }
+          @case ('usuarios') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="9" cy="8" r="3.5" />
+            <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+            <circle cx="17.5" cy="8.5" r="2.5" />
+            <path d="M16 14.2c2.6.5 4.5 2.4 4.5 5.8" />
+          </svg>
+          }
+          @case ('certificados') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="9" r="6" />
+            <path d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5" />
+          </svg>
+          }
+          @case ('formularios') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="5" y="3" width="14" height="18" rx="2" />
+            <line x1="8.5" y1="8" x2="15.5" y2="8" />
+            <line x1="8.5" y1="12" x2="15.5" y2="12" />
+            <line x1="8.5" y1="16" x2="12.5" y2="16" />
+          </svg>
+          }
+          @case ('reportes') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="21" x2="5" y2="10" />
+            <line x1="12" y1="21" x2="12" y2="4" />
+            <line x1="19" y1="21" x2="19" y2="14" />
+          </svg>
+          }
+          @case ('estandares') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M9 12l2 2 4-4" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+          }
+          @case ('solicitudes') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="5" y="3" width="14" height="18" rx="2" />
+            <line x1="8.5" y1="8" x2="15.5" y2="8" />
+            <line x1="8.5" y1="12" x2="15.5" y2="12" />
+            <polyline points="8.5 16 10.5 18 15.5 13" />
+          </svg>
+          }
+          @case ('landing') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="14" rx="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+          </svg>
+          }
+          @case ('auditoria') {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" />
+          </svg>
+          }
+          }
+        </span>
+        <span>{{ item.label }}</span>
+      </button>
       }
     </nav>
 
     <button class="dash-logout" (click)="logout()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
       Cerrar sesión
     </button>
   </aside>
@@ -60,584 +164,835 @@
 
     <!-- Toast de éxito -->
     @if (actionSuccess()) {
-      <div class="success-toast">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/></svg>
-        {{ actionSuccess() }}
-      </div>
-    }
-
-    <!-- ⚠️ Banner: OPERADOR sin ficha de registro -->
-    @if (role === 'OPERADOR' && !loadingParticipant() && !myParticipantRecord()) {
-      <div class="ficha-warning-banner">
-        <div class="ficha-warning-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        </div>
-        <div class="ficha-warning-body">
-          <h3 class="ficha-warning-title">Ficha de registro pendiente</h3>
-          <p class="ficha-warning-text">
-            Tu cuenta aún <strong>no tiene una ficha de registro</strong> asociada en el sistema.
-            Sin ella no podrás inscribirte a cursos ni llenar formularios de inscripción.
-            Llena el formulario ahora para iniciar tu proceso de certificación CONOCER.
-          </p>
-          <div class="ficha-warning-actions">
-            <button class="ficha-warning-btn" (click)="openFichaDirectly()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Llenar Ficha de Registro
-            </button>
-          </div>
-        </div>
-      </div>
+    <div class="success-toast">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+          stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      {{ actionSuccess() }}
+    </div>
     }
 
     <!-- ====== INICIO ====== -->
     @if (activeTab() === 'inicio') {
-      <div class="dash-section">
-        <div class="dash-welcome">
-          <h1>Bienvenido, {{ firstNombre() }} 👋</h1>
-          <p>Panel de control · <span class="role-text" [class]="role ?? ''">{{ getRoleLabel(role ?? '') }}</span></p>
-        </div>
-
-        <!-- Stats según rol -->
-        <div class="stats-row">
-
-          @if (role === 'OPERADOR' || role === 'INSTRUCTOR') {
-            <div class="stat-card">
-              <div class="stat-icon teal">📧</div>
-              <div><span class="stat-val">{{ user?.email }}</span><span class="stat-desc">Correo electrónico</span></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon blue">📱</div>
-              <div><span class="stat-val">{{ user?.phone ?? '—' }}</span><span class="stat-desc">Teléfono</span></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon green">✅</div>
-              <div><span class="stat-val">{{ user?.is_active ? 'Activo' : 'Inactivo' }}</span><span class="stat-desc">Estado de cuenta</span></div>
-            </div>
-          }
-
-          @if (role === 'COORDINADOR' || role === 'ADMIN_INSTITUCION' || role === 'SUPER_ADMIN') {
-            <div class="stat-card" (click)="setTab('usuarios')" style="cursor:pointer">
-              <div class="stat-icon teal">👥</div>
-              <div><span class="stat-val">{{ allUsers().length }}</span><span class="stat-desc">Total usuarios</span></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon purple">🎓</div>
-              <div><span class="stat-val">{{ instructores().length }}</span><span class="stat-desc">Instructores</span></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon orange">⚠️</div>
-              <div><span class="stat-val">{{ inactivos().length }}</span><span class="stat-desc">Usuarios inactivos</span></div>
-            </div>
-            @if (role === 'SUPER_ADMIN') {
-              <div class="stat-card" (click)="setTab('admins')" style="cursor:pointer">
-                <div class="stat-icon red">🛡️</div>
-                <div><span class="stat-val">{{ admins().length }}</span><span class="stat-desc">Administradores</span></div>
-              </div>
-            }
-          }
-
-        </div>
+    <div class="dash-section">
+      <div class="dash-welcome">
+        <h1>Bienvenido, {{ firstNombre() }} 👋</h1>
+        <p>Panel de control · <span class="role-text" [class]="role ?? ''">{{ getRoleLabel(role ?? '') }}</span></p>
       </div>
+
+      <!-- Stats según rol -->
+      <div class="stats-row">
+
+        @if (role === 'CANDIDATO' || role === 'EVALUADOR') {
+        <div class="stat-card">
+          <div class="stat-icon teal">📧</div>
+          <div><span class="stat-val">{{ user?.email }}</span><span class="stat-desc">Correo electrónico</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">📱</div>
+          <div><span class="stat-val">{{ user?.phone ?? '—' }}</span><span class="stat-desc">Teléfono</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div><span class="stat-val">{{ user?.is_active ? 'Activo' : 'Inactivo' }}</span><span class="stat-desc">Estado
+              de cuenta</span></div>
+        </div>
+        }
+
+        @if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        <div class="stat-card" (click)="setTab('usuarios')" style="cursor:pointer">
+          <div class="stat-icon teal">👥</div>
+          <div><span class="stat-val">{{ allUsers().length }}</span><span class="stat-desc">Total usuarios</span></div>
+        </div>
+        <div class="stat-card" (click)="setTab('usuarios')" style="cursor:pointer">
+          <div class="stat-icon purple">🎓</div>
+          <div><span class="stat-val">{{ evaluadores().length }}</span><span class="stat-desc">Evaluadores</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">⚠️</div>
+          <div><span class="stat-val">{{ inactivos().length }}</span><span class="stat-desc">Usuarios inactivos</span>
+          </div>
+        </div>
+        @if (role === 'SUPER_ADMIN') {
+        <div class="stat-card" (click)="setTab('usuarios')" style="cursor:pointer">
+          <div class="stat-icon red">🛡️</div>
+          <div><span class="stat-val">{{ admins().length }}</span><span class="stat-desc">Administradores</span></div>
+        </div>
+        }
+        }
+
+      </div>
+    </div>
     }
 
     <!-- ====== FICHA DE REGISTRO ====== -->
     @if (activeTab() === 'ficha-registro') {
-      <div class="dash-section">
-        <app-ficha-registro-page (saved)="onFichaRegistroSaved()"></app-ficha-registro-page>
-      </div>
+    <div class="dash-section">
+      <app-mis-fichas (fichaGuardada)="onFichaGuardada()"></app-mis-fichas>
+    </div>
+    }
+
+    <!-- ====== SOLICITUDES DE FICHA (admin) ====== -->
+    @if (activeTab() === 'solicitudes') {
+    <div class="dash-section">
+      <app-ficha-registro-admin></app-ficha-registro-admin>
+    </div>
     }
 
     <!-- ====== MI PERFIL ====== -->
     @if (activeTab() === 'perfil') {
 
-      <div class="dash-section">
-        <h2 class="section-h2">Mi perfil</h2>
-        <div class="profile-grid">
-          <div class="profile-field">
-            <label>Nombre completo</label><span>{{ user?.full_name ?? '—' }}</span>
-          </div>
-          <div class="profile-field">
-            <label>Correo electrónico</label><span>{{ user?.email ?? '—' }}</span>
-          </div>
-          <div class="profile-field">
-            <label>Teléfono</label><span>{{ user?.phone ?? '—' }}</span>
-          </div>
-          <div class="profile-field">
-            <label>Rol</label>
-            <span class="status-chip uploaded">{{ getRoleLabel(user?.role ?? '') }}</span>
-          </div>
-          <div class="profile-field">
-            <label>Estado</label>
+    <div class="dash-section profile-page">
+
+      <!-- ── Hero / Banner del usuario ─────────────────────────────── -->
+      <div class="profile-hero">
+        <div class="profile-hero-avatar">{{ getInitial() }}</div>
+        <div class="profile-hero-info">
+          <h1 class="profile-hero-name">{{ user?.full_name ?? '—' }}</h1>
+          <div class="profile-hero-meta">
+            <span class="profile-hero-email">{{ user?.email ?? '—' }}</span>
+            <span class="profile-hero-sep">·</span>
             <span class="status-chip" [class.uploaded]="user?.is_active" [class.missing]="!user?.is_active">
               {{ user?.is_active ? 'Activo' : 'Inactivo' }}
             </span>
-          </div>
-          <div class="profile-field">
-            <label>Institución</label><span>{{ user?.institution_id ?? 'Sin institución' }}</span>
+            <span class="profile-hero-sep">·</span>
+            <span class="status-chip uploaded">{{ getRoleLabel(user?.role ?? '') }}</span>
           </div>
         </div>
+      </div>
 
-        <!-- Cursos disponibles (autoservicio del candidato) -->
-        @if (role === 'OPERADOR') {
-          <div class="my-enrollments-block" style="margin-top: 2.25rem;">
-            <h2 class="section-h2">📚 Cursos disponibles</h2>
-            <p class="section-sub">Solicita tu inscripción a un grupo. En cuanto quedes inscrito, podrás llenar tu carta de solicitud y tu ficha de registro.</p>
+      <!-- ── Grid de tarjetas selectoras (sin contenido inline) ──── -->
+      <div class="profile-cards">
 
-            @if (availableGroupsFiltered().length === 0) {
-              <div class="empty-state sm" style="padding: 2.5rem 1rem">
-                <span>📭</span>
-                <p>No hay grupos disponibles para inscripción en este momento.</p>
-              </div>
-            } @else {
-              <div class="my-enroll-grid">
-                @for (g of availableGroupsFiltered(); track g.id) {
-                  <div class="my-enroll-card">
-                    <div class="my-enroll-info">
-                      <div class="my-course-title">{{ g.courses?.name ?? 'Curso' }}</div>
-                      <div class="my-group-sub">Grupo: {{ g.name }}</div>
-                    </div>
-                    <button class="part-btn-forms" [disabled]="requestingEnrollment()" (click)="requestEnrollment(g.id)">
-                      Solicitar inscripción
-                    </button>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+        <!-- Datos personales -->
+        <button class="profile-card" [class.active]="activeProfileCard() === 'datos'"
+          (click)="toggleProfileCard('datos')" id="btn-profile-datos">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Datos personales</span>
+          <span class="profile-card-subtitle">Nombre, teléfono, institución</span>
+        </button>
+
+        <!-- Contraseña -->
+        <button class="profile-card" [class.active]="activeProfileCard() === 'contrasena'"
+          (click)="toggleProfileCard('contrasena')" id="btn-profile-contrasena">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Contraseña</span>
+          <span class="profile-card-subtitle">Modifica tu acceso</span>
+        </button>
+
+        <!-- Cursos disponibles — solo CANDIDATO -->
+        @if (role === 'CANDIDATO') {
+        <button class="profile-card" [class.active]="activeProfileCard() === 'cursos-disponibles'"
+          (click)="toggleProfileCard('cursos-disponibles')" id="btn-profile-cursos-disp">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Cursos disponibles</span>
+          <span class="profile-card-subtitle">{{ availableGroupsFiltered().length }} grupo(s) abierto(s)</span>
+        </button>
         }
 
-        <!-- Mis Cursos y Formularios de Inscripción -->
-        <div class="my-enrollments-block" style="margin-top: 2.25rem;">
-          <h2 class="section-h2">📝 Mis Cursos y Formularios de Inscripción</h2>
-          <p class="section-sub">Llena tus cartas de solicitud y fichas de registro para los cursos en los que estás inscrito</p>
-
-          @if (myEnrollments().length === 0) {
-            <div class="empty-state sm" style="padding: 2.5rem 1rem">
-              <span>📋</span>
-              <p>No tienes inscripciones activas asociadas a tu correo.</p>
-            </div>
-          } @else {
-            <div class="my-enroll-grid">
-              @for (e of myEnrollments(); track e.id) {
-                <div class="my-enroll-card">
-                  <div class="my-enroll-info">
-                    <div class="my-course-title">{{ e.groups?.courses?.name ?? 'Curso' }}</div>
-                    <div class="my-group-sub">Grupo: {{ e.groups?.name }}</div>
-                  </div>
-                  <button class="part-btn-forms" (click)="openMyWizard(e)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                    Llenar Formularios de Inscripción
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <!-- Mis Cursos y Formularios -->
+        <button class="profile-card" [class.active]="activeProfileCard() === 'mis-cursos'"
+          (click)="toggleProfileCard('mis-cursos')" id="btn-profile-mis-cursos">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Mis Cursos</span>
+          <span class="profile-card-subtitle">{{ myEnrollments().length }} inscripción(es) activa(s)</span>
+        </button>
 
         <!-- Mis Documentos -->
-        <div class="my-enrollments-block" style="margin-top: 2.25rem;">
-          <h2 class="section-h2">📄 Mis Documentos</h2>
-          <p class="section-sub">Sube tus documentos (identificación, comprobante de domicilio, etc.) para que el equipo los valide</p>
-
-          <div class="doc-upload-row">
-            <select [value]="selectedMyDocType()" (change)="selectedMyDocType.set($any($event.target).value)">
-              @for (t of documentTypes; track t.value) {
-                <option [value]="t.value">{{ t.label }}</option>
-              }
-            </select>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onMyDocFileSelected($event)">
-            <button class="btn-small primary" [disabled]="!myPendingFile || uploadingMyDoc()" (click)="uploadMyDocument()">
-              {{ uploadingMyDoc() ? 'Subiendo…' : 'Subir documento' }}
-            </button>
-          </div>
-
-          @if (myDocuments().length === 0) {
-            <div class="empty-state sm" style="padding: 2rem 1rem">
-              <span>📄</span>
-              <p>Aún no has subido documentos.</p>
-            </div>
-          } @else {
-            <div class="doc-list">
-              @for (d of myDocuments(); track d.id) {
-                <div class="doc-row">
-                  <div class="doc-info">
-                    <div class="doc-name">{{ docTypeLabel(d.type) }}</div>
-                    <div class="doc-meta">{{ d.file_name }}</div>
-                  </div>
-                  <span class="doc-status-chip" [class]="d.status">{{ docStatusLabel(d.status) }}</span>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <button class="profile-card" [class.active]="activeProfileCard() === 'documentos'"
+          (click)="toggleProfileCard('documentos')" id="btn-profile-documentos">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+              <polyline points="13 2 13 9 20 9" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Mis Documentos</span>
+          <span class="profile-card-subtitle">{{ myDocuments().length }} documento(s) subido(s)</span>
+        </button>
 
         <!-- Mis Certificados -->
-        <div class="my-enrollments-block" style="margin-top: 2.25rem;">
-          <h2 class="section-h2">🏅 Mis Certificados</h2>
-          <p class="section-sub">Certificados emitidos a tu nombre</p>
+        <button class="profile-card" [class.active]="activeProfileCard() === 'certificados'"
+          (click)="toggleProfileCard('certificados')" id="btn-profile-certificados">
+          <span class="profile-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="9" r="6" />
+              <path d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5" />
+            </svg>
+          </span>
+          <span class="profile-card-title">Mis Certificados</span>
+          <span class="profile-card-subtitle">{{ myCertificates().length }} certificado(s)</span>
+        </button>
 
-          @if (myCertificates().length === 0) {
-            <div class="empty-state sm" style="padding: 2rem 1rem">
-              <span>🏅</span>
-              <p>Todavía no tienes certificados emitidos.</p>
+      </div><!-- /profile-cards -->
+
+      <!-- ── Panel de detalle (debajo del grid, no mueve las tarjetas) ── -->
+      @if (activeProfileCard()) {
+      <div class="profile-detail-panel">
+
+        <!-- Encabezado del panel -->
+        <div class="profile-detail-header">
+          <span class="profile-detail-title">
+            @switch (activeProfileCard()) {
+            @case ('datos') { Datos personales }
+            @case ('contrasena') { Contraseña }
+            @case ('cursos-disponibles') { 📚 Cursos disponibles }
+            @case ('mis-cursos') { 📝 Mis Cursos y Formularios }
+            @case ('documentos') { 📄 Mis Documentos }
+            @case ('certificados') { 🏅 Mis Certificados }
+            }
+          </span>
+          <button class="profile-detail-close" (click)="toggleProfileCard(activeProfileCard()!)" aria-label="Cerrar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido según la tarjeta activa -->
+        @switch (activeProfileCard()) {
+
+        @case ('datos') {
+        <div class="profile-info-grid">
+          <div class="profile-info-item">
+            <span class="profile-info-label">Nombre completo</span>
+            <span class="profile-info-value">{{ user?.full_name ?? '—' }}</span>
+          </div>
+          <div class="profile-info-item">
+            <span class="profile-info-label">Correo electrónico</span>
+            <span class="profile-info-value">{{ user?.email ?? '—' }}</span>
+          </div>
+          <div class="profile-info-item">
+            <span class="profile-info-label">Teléfono</span>
+            <span class="profile-info-value">{{ user?.phone ?? '—' }}</span>
+          </div>
+          <div class="profile-info-item">
+            <span class="profile-info-label">Institución</span>
+            <span class="profile-info-value">{{ user?.institution_name ?? 'Sin institución' }}</span>
+          </div>
+        </div>
+        }
+
+        @case ('contrasena') {
+        <p class="change-pwd-hint">La nueva contraseña debe tener al menos 8 caracteres.</p>
+        @if (changePwdError()) {
+        <div class="change-pwd-error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {{ changePwdError() }}
+        </div>
+        }
+        @if (changePwdSuccess()) {
+        <div class="change-pwd-success">{{ changePwdSuccess() }}</div>
+        }
+        <div class="profile-pwd-grid">
+          <div class="change-pwd-field">
+            <label for="pwd-current">Contraseña actual</label>
+            <div class="pwd-input-wrap">
+              <input id="pwd-current" [type]="showCurrentPwd() ? 'text' : 'password'" placeholder="Tu contraseña actual"
+                [value]="changePwdCurrentPassword()" (input)="changePwdCurrentPassword.set($any($event.target).value)"
+                autocomplete="current-password">
+              <button type="button" class="pwd-eye-btn" (click)="showCurrentPwd.update(v => !v)" tabindex="-1">
+                @if (showCurrentPwd()) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                </svg>
+                }
+              </button>
             </div>
-          } @else {
-            <div class="cert-grid">
-              @for (c of myCertificates(); track c.id) {
-                <div class="cert-card">
-                  <img [src]="c.qr_data_url" alt="QR de verificación" class="cert-qr">
-                  <div class="cert-card-info">
-                    <div class="cert-card-course">{{ c.courses?.name ?? 'Curso' }}</div>
-                    <div class="cert-card-folio">Folio: {{ c.folio }}</div>
-                    <span class="status-chip" [class.uploaded]="c.status === 'active'" [class.missing]="c.status !== 'active'">
-                      {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
-                    </span>
-                  </div>
-                </div>
-              }
+          </div>
+          <div class="change-pwd-field">
+            <label for="pwd-new">Nueva contraseña</label>
+            <div class="pwd-input-wrap">
+              <input id="pwd-new" [type]="showNewPwd() ? 'text' : 'password'" placeholder="Mínimo 8 caracteres"
+                [value]="changePwdNew()" (input)="changePwdNew.set($any($event.target).value)"
+                autocomplete="new-password">
+              <button type="button" class="pwd-eye-btn" (click)="showNewPwd.update(v => !v)" tabindex="-1">
+                @if (showNewPwd()) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                </svg>
+                }
+              </button>
             </div>
+          </div>
+          <div class="change-pwd-field">
+            <label for="pwd-confirm">Confirmar nueva contraseña</label>
+            <div class="pwd-input-wrap">
+              <input id="pwd-confirm" [type]="showConfirmPwd() ? 'text' : 'password'"
+                placeholder="Repite la nueva contraseña" [value]="changePwdConfirm()"
+                (input)="changePwdConfirm.set($any($event.target).value)" autocomplete="new-password">
+              <button type="button" class="pwd-eye-btn" (click)="showConfirmPwd.update(v => !v)" tabindex="-1">
+                @if (showConfirmPwd()) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                </svg>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="change-pwd-actions">
+          <button class="btn-small primary" id="btn-submit-change-password"
+            [disabled]="changePwdLoading()" (click)="submitChangePassword()">
+            {{ changePwdLoading() ? 'Guardando…' : 'Actualizar contraseña' }}
+          </button>
+        </div>
+        }
+
+        @case ('cursos-disponibles') {
+        <p class="section-sub" style="margin-bottom:1rem">Solicita tu inscripción a un grupo. En cuanto quedes inscrito,
+          podrás llenar tu carta de solicitud y tu ficha de registro.</p>
+        @if (availableGroupsFiltered().length === 0) {
+        <div class="empty-state sm" style="padding: 2rem 1rem">
+          <span>📭</span>
+          <p>No hay grupos disponibles para inscripción en este momento.</p>
+        </div>
+        } @else {
+        <div class="my-enroll-grid">
+          @for (g of availableGroupsFiltered(); track g.id) {
+          <div class="my-enroll-card">
+            <div class="my-enroll-info">
+              <div class="my-course-title">{{ g.courses?.name ?? 'Curso' }}</div>
+              <div class="my-group-sub">Grupo: {{ g.name }}</div>
+            </div>
+            <button class="part-btn-forms" [disabled]="requestingEnrollment()" (click)="requestEnrollment(g.id)">
+              Solicitar inscripción
+            </button>
+          </div>
+          }
+        </div>
+        }
+        }
+
+        @case ('mis-cursos') {
+        <p class="section-sub" style="margin-bottom:1rem">Llena tus cartas de solicitud y fichas de registro para los
+          cursos en los que estás inscrito</p>
+        @if (myEnrollments().length === 0) {
+        <div class="empty-state sm" style="padding: 2rem 1rem">
+          <span>📋</span>
+          <p>No tienes inscripciones activas asociadas a tu correo.</p>
+        </div>
+        } @else {
+        <div class="my-enroll-grid">
+          @for (e of myEnrollments(); track e.id) {
+          <div class="my-enroll-card">
+            <div class="my-enroll-info">
+              <div class="my-course-title">{{ e.groups?.courses?.name ?? 'Curso' }}</div>
+              <div class="my-group-sub">Grupo: {{ e.groups?.name }}</div>
+            </div>
+            <button class="part-btn-forms" (click)="openMyWizard(e)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              Llenar Formularios de Inscripción
+            </button>
+          </div>
+          }
+        </div>
+        }
+        }
+
+        @case ('documentos') {
+        <p class="section-sub" style="margin-bottom:1rem">Sube tus documentos (identificación, comprobante de domicilio,
+          etc.) para que el equipo los valide</p>
+        <div class="doc-upload-row">
+          <select [value]="selectedMyDocType()" (change)="selectedMyDocType.set($any($event.target).value)">
+            @for (t of documentTypes; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onMyDocFileSelected($event)">
+          <button class="btn-small primary" [disabled]="!myPendingFile || uploadingMyDoc()"
+            (click)="uploadMyDocument()">
+            {{ uploadingMyDoc() ? 'Subiendo…' : 'Subir documento' }}
+          </button>
+        </div>
+        @if (myDocuments().length === 0) {
+        <div class="empty-state sm" style="padding: 2rem 1rem">
+          <span>📄</span>
+          <p>Aún no has subido documentos.</p>
+        </div>
+        } @else {
+        <div class="doc-list">
+          @for (d of myDocuments(); track d.id) {
+          <div class="doc-row">
+            <div class="doc-info">
+              <div class="doc-name">{{ docTypeLabel(d.type) }}</div>
+              <div class="doc-meta">{{ d.file_name }}</div>
+            </div>
+            <span class="doc-status-chip" [class]="d.status">{{ docStatusLabel(d.status) }}</span>
+          </div>
+          }
+        </div>
+        }
+        }
+
+        @case ('certificados') {
+        @if (myCertificates().length === 0) {
+        <div class="empty-state sm" style="padding: 2rem 1rem">
+          <span>🏅</span>
+          <p>Todavía no tienes certificados emitidos.</p>
+        </div>
+        } @else {
+        <div class="cert-grid">
+          @for (c of myCertificates(); track c.id) {
+          <div class="cert-card">
+            <img [src]="c.qr_data_url" alt="QR de verificación" class="cert-qr">
+            <div class="cert-card-info">
+              <div class="cert-card-course">{{ c.courses?.name ?? 'Curso' }}</div>
+              <div class="cert-card-folio">Folio: {{ c.folio }}</div>
+              <span class="status-chip" [class.uploaded]="c.status === 'active'"
+                [class.missing]="c.status !== 'active'">
+                {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
+              </span>
+            </div>
+          </div>
+          }
+        </div>
+        }
+        }
+
+        }<!-- /switch -->
+      </div><!-- /profile-detail-panel -->
+      }
+
+    </div>
+    }
+
+    <!-- ====== USUARIOS (Admin / SuperAdmin) ====== -->
+    @if (activeTab() === 'usuarios') {
+    <div class="dash-section">
+      <h2 class="section-h2">Gestión de usuarios</h2>
+      <p class="section-sub">
+        Todos los usuarios de la plataforma en un solo lugar. Filtra por rol o busca por nombre/correo.
+      </p>
+
+      <div class="users-toolbar">
+        <div class="users-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" name="usersTableSearch" autocomplete="off" placeholder="Buscar por nombre o correo…"
+            [value]="userSearchQuery()" (input)="userSearchQuery.set($any($event.target).value)">
+        </div>
+        <div class="users-role-filter">
+          @for (opt of userRoleFilterOptions; track opt.value) {
+          <button type="button" class="role-filter-chip" [class.active]="userRoleFilter() === opt.value"
+            (click)="userRoleFilter.set(opt.value)">{{ opt.label }}</button>
           }
         </div>
       </div>
-    }
 
-    <!-- ====== USUARIOS (Admin / Coordinador / SuperAdmin) ====== -->
-    @if (activeTab() === 'usuarios') {
-      <div class="dash-section">
-        <h2 class="section-h2">Gestión de usuarios</h2>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                @if (auth.canManageUsers()) { <th>Acciones</th> }
-              </tr>
-            </thead>
-            <tbody>
-              @for (u of allUsers(); track u.id) {
-                <tr>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <div class="mini-avatar">{{ u.full_name.charAt(0).toUpperCase() }}</div>
-                      {{ u.full_name }}
-                    </div>
-                  </td>
-                  <td>{{ u.email }}</td>
-                  <td>
-                    <span class="status-chip" [class]="getRoleBadgeClass(u.role)">
-                      {{ getRoleLabel(u.role) }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="status-chip" [class.uploaded]="u.is_active" [class.missing]="!u.is_active">
-                      {{ u.is_active ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  @if (auth.canManageUsers()) {
-                    <td>
-                      <div class="action-btns">
-                        @if (u.id !== user?.id) {
-                          <button class="btn-small" (click)="toggleActive(u.id)">
-                            {{ u.is_active ? 'Desactivar' : 'Activar' }}
-                          </button>
-                          <select class="role-select" [value]="u.role" (change)="changeRole(u.id, $any($event.target).value)">
-                            <option value="OPERADOR">Operador</option>
-                            <option value="INSTRUCTOR">Instructor</option>
-                            <option value="COORDINADOR">Coordinador</option>
-                            <option value="ADMIN_INSTITUCION">Admin Institución</option>
-                            @if (role === 'SUPER_ADMIN') {
-                              <option value="SUPER_ADMIN">Super Admin</option>
-                            }
-                          </select>
-                        } @else {
-                          <span class="self-badge">Tú</span>
-                        }
-                      </div>
-                    </td>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Institución</th>
+              <th>Estado</th>
+              @if (auth.canManageUsers()) { <th>Acciones</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filteredUsers(); track u.id) {
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="mini-avatar">{{ u.full_name.charAt(0).toUpperCase() }}</div>
+                  {{ u.full_name }}
+                </div>
+              </td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="status-chip" [class]="getRoleBadgeClass(u.role)">
+                  {{ getRoleLabel(u.role) }}
+                </span>
+              </td>
+              <td>
+                @if (auth.canManageUsers()) {
+                <input type="text" class="institution-input" placeholder="Sin institución"
+                  [value]="u.institution_name ?? ''" (change)="updateInstitutionName(u.id, $any($event.target).value)">
+                } @else {
+                {{ u.institution_name ?? '—' }}
+                }
+              </td>
+              <td>
+                <span class="status-chip" [class.uploaded]="u.is_active" [class.missing]="!u.is_active">
+                  {{ u.is_active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              @if (auth.canManageUsers()) {
+              <td>
+                <div class="action-btns">
+                  @if (u.id !== user?.id) {
+                  <button class="btn-small" (click)="toggleActive(u.id)">
+                    {{ u.is_active ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  @if (u.role === 'EVALUADOR') {
+                  <button class="btn-small" (click)="openCertModal(u)" title="Gestionar certificaciones de evaluador">
+                    Certificaciones
+                  </button>
                   }
-                </tr>
-              } @empty {
-                <tr><td colspan="5" class="empty-row">Sin usuarios registrados.</td></tr>
+                  @if (auth.isSuperAdmin()) {
+                  <button class="btn-small" (click)="resetPassword(u.id, u.full_name)"
+                    title="Genera una contraseña temporal y cierra su sesión">
+                    Restablecer contraseña
+                  </button>
+                  }
+                  <select class="role-select" [value]="u.role" (change)="changeRole(u.id, $any($event.target).value)">
+                    <option value="CANDIDATO">Candidato</option>
+                    <option value="EVALUADOR">Evaluador</option>
+                    <option value="ADMIN">Admin</option>
+                    @if (role === 'SUPER_ADMIN') {
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                    }
+                  </select>
+                  @if (auth.isSuperAdmin()) {
+                  <button class="btn-small danger" (click)="openDeleteUserModal(u)"
+                    title="Eliminar usuario permanentemente">
+                    Eliminar
+                  </button>
+                  }
+                  } @else {
+                  <span class="self-badge">Tú</span>
+                  }
+                </div>
+              </td>
               }
-            </tbody>
-          </table>
-        </div>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="7" class="empty-row">No hay usuarios que coincidan con la búsqueda/filtro.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
       </div>
+    </div>
     }
 
-    <!-- ====== INSTRUCTORES (Coordinador / Admin) ====== -->
-    @if (activeTab() === 'instructores') {
-      <div class="dash-section">
-        <h2 class="section-h2">Instructores</h2>
-        <p class="section-sub">
-          Para poder ser asignado a un grupo, un instructor debe tener la credencial de instructor
-          y la certificación del estándar/curso que va a impartir.
-        </p>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Certificaciones</th></tr></thead>
-            <tbody>
-              @for (i of instructores(); track i.id) {
-                <tr>
-                  <td>{{ i.full_name }}</td>
-                  <td>{{ i.email }}</td>
-                  <td>{{ i.phone ?? '—' }}</td>
-                  <td><span class="status-chip" [class.uploaded]="i.is_active" [class.missing]="!i.is_active">{{ i.is_active ? 'Activo' : 'Inactivo' }}</span></td>
-                  <td>
-                    <button class="btn-small" (click)="openCertModal(i)">Gestionar certificaciones</button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="5" class="empty-row">Sin instructores registrados.</td></tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    }
-
-    <!-- ====== CERTIFICADOS (Coordinador / Admin / SuperAdmin) ====== -->
+    <!-- ====== CERTIFICADOS (Admin / SuperAdmin) ====== -->
     @if (activeTab() === 'certificados') {
-      <div class="dash-section">
-        <h2 class="section-h2">Certificados emitidos</h2>
-        <p class="section-sub">Los certificados se emiten desde el detalle de cada participante, en su inscripción completada.</p>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr><th>Folio</th><th>Candidato</th><th>Curso</th><th>Emitido</th><th>Vence</th><th>Estado</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              @for (c of allCertificates(); track c.id) {
-                <tr>
-                  <td style="font-family: 'SF Mono','Fira Code',monospace">{{ c.folio }}</td>
-                  <td>{{ c.participants?.full_name }}</td>
-                  <td>{{ c.courses?.name }} ({{ c.courses?.code }})</td>
-                  <td>{{ c.issued_at | date:'dd/MM/yyyy' }}</td>
-                  <td>{{ c.expires_at ? (c.expires_at | date:'dd/MM/yyyy') : 'Sin vencimiento' }}</td>
-                  <td>
-                    <span class="status-chip" [class.uploaded]="c.status === 'active'" [class.missing]="c.status !== 'active'">
-                      {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
-                    </span>
-                  </td>
-                  <td>
-                    @if (c.status === 'active') {
-                      <button class="btn-small danger" [disabled]="revokingCertId() === c.id" (click)="revokeCertificate(c)">
-                        {{ revokingCertId() === c.id ? 'Revocando…' : 'Revocar' }}
-                      </button>
-                    } @else {
-                      <span class="self-badge">{{ c.revocation_reason || 'Revocado' }}</span>
-                    }
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="7" class="empty-row">Sin certificados emitidos todavía.</td></tr>
-              }
-            </tbody>
-          </table>
-        </div>
+    <div class="dash-section">
+      <h2 class="section-h2">Certificados emitidos</h2>
+      <p class="section-sub">Los certificados se emiten desde el detalle de cada participante, en su inscripción
+        completada.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Candidato</th>
+              <th>Curso</th>
+              <th>Emitido</th>
+              <th>Vence</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of allCertificates(); track c.id) {
+            <tr>
+              <td style="font-family: 'SF Mono','Fira Code',monospace">{{ c.folio }}</td>
+              <td>{{ c.participants?.full_name }}</td>
+              <td>{{ c.courses?.name }} ({{ c.courses?.code }})</td>
+              <td>{{ c.issued_at | date:'dd/MM/yyyy' }}</td>
+              <td>{{ c.expires_at ? (c.expires_at | date:'dd/MM/yyyy') : 'Sin vencimiento' }}</td>
+              <td>
+                <span class="status-chip" [class.uploaded]="c.status === 'active'"
+                  [class.missing]="c.status !== 'active'">
+                  {{ c.status === 'active' ? 'Vigente' : 'Revocado' }}
+                </span>
+              </td>
+              <td>
+                @if (c.status === 'active') {
+                <button class="btn-small danger" [disabled]="revokingCertId() === c.id" (click)="revokeCertificate(c)">
+                  {{ revokingCertId() === c.id ? 'Revocando…' : 'Revocar' }}
+                </button>
+                } @else {
+                <span class="self-badge">{{ c.revocation_reason || 'Revocado' }}</span>
+                }
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="7" class="empty-row">Sin certificados emitidos todavía.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    }
-
-    <!-- ====== ADMINS (SuperAdmin only) ====== -->
-    @if (activeTab() === 'admins') {
-      <div class="dash-section">
-        <h2 class="section-h2">Administradores de institución</h2>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Nombre</th><th>Correo</th><th>Institución</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-              @for (a of admins(); track a.id) {
-                <tr>
-                  <td>{{ a.full_name }}</td>
-                  <td>{{ a.email }}</td>
-                  <td>{{ a.institution_id ?? '—' }}</td>
-                  <td><span class="status-chip" [class.uploaded]="a.is_active" [class.missing]="!a.is_active">{{ a.is_active ? 'Activo' : 'Inactivo' }}</span></td>
-                  <td>
-                    @if (a.id !== user?.id) {
-                      <button class="btn-small danger" (click)="changeRole(a.id, 'OPERADOR')">Quitar admin</button>
-                    } @else {
-                      <span class="self-badge">Tú</span>
-                    }
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="5" class="empty-row">Sin administradores registrados.</td></tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
+    </div>
     }
 
     <!-- ====== GRUPOS / REPORTES — placeholders ====== -->
     @if (activeTab() === 'grupos') {
-      <div class="dash-section">
-        <h2 class="section-h2">Grupos</h2>
-        <div class="empty-state"><span>📋</span><p>Los grupos se gestionan dentro de cada curso. Ve a la sección <strong>Cursos</strong> y selecciona un curso para ver sus grupos.</p>
-          <button class="btn-small" (click)="setTab('cursos')">Ir a Cursos →</button>
-        </div>
+    <div class="dash-section">
+      <h2 class="section-h2">Grupos</h2>
+      <div class="empty-state"><span>📋</span>
+        <p>Los grupos se gestionan dentro de cada curso. Ve a la sección <strong>Cursos</strong> y selecciona un curso
+          para ver sus grupos.</p>
+        <button class="btn-small" (click)="setTab('cursos')">Ir a Cursos →</button>
       </div>
+    </div>
     }
     @if (activeTab() === 'reportes') {
-      <div class="dash-section">
-        <h2 class="section-h2">Reportes</h2>
-        <div class="empty-state"><span>📊</span><p>Módulo de reportes en construcción.</p></div>
+    <div class="dash-section">
+      <h2 class="section-h2">Reportes</h2>
+      <div class="empty-state"><span>📊</span>
+        <p>Módulo de reportes en construcción.</p>
       </div>
+    </div>
     }
 
     <!-- ====== AUDITORÍA (SuperAdmin only) ====== -->
     @if (activeTab() === 'auditoria') {
-      <div class="dash-section">
-        <h2 class="section-h2">Bitácora de auditoría</h2>
-        <p class="section-sub">Últimas 150 acciones sensibles registradas en la plataforma.</p>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Detalle</th></tr>
-            </thead>
-            <tbody>
-              @for (log of auditLogs(); track log.id) {
-                <tr>
-                  <td style="white-space:nowrap">{{ log.created_at | date:'dd/MM/yy HH:mm' }}</td>
-                  <td>{{ log.users?.full_name ?? '—' }}</td>
-                  <td><span class="status-chip uploaded">{{ log.action }}</span></td>
-                  <td>{{ log.entity ?? '—' }}</td>
-                  <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem; color:#94a3b8">
-                    {{ auditMetadataPreview(log) }}
-                  </td>
-                </tr>
-              } @empty {
-                <tr><td colspan="5" class="empty-row">Sin actividad registrada todavía.</td></tr>
-              }
-            </tbody>
-          </table>
-        </div>
+    <div class="dash-section">
+      <h2 class="section-h2">Bitácora de auditoría</h2>
+      <p class="section-sub">Últimas 150 acciones sensibles registradas en la plataforma.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Entidad</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of auditLogs(); track log.id) {
+            <tr>
+              <td style="white-space:nowrap">{{ log.created_at | date:'dd/MM/yy HH:mm' }}</td>
+              <td>{{ log.users?.full_name ?? '—' }}</td>
+              <td><span class="status-chip uploaded">{{ log.action }}</span></td>
+              <td>{{ log.entity ?? '—' }}</td>
+              <td
+                style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.78rem; color:#94a3b8">
+                {{ auditMetadataPreview(log) }}
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="5" class="empty-row">Sin actividad registrada todavía.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
       </div>
+    </div>
     }
 
     <!-- ====== LANDING PAGE (SuperAdmin only, low-code) ====== -->
     @if (activeTab() === 'landing') {
-      <div class="dash-section">
-        <app-landing-editor></app-landing-editor>
-      </div>
+    <div class="dash-section">
+      <app-landing-editor></app-landing-editor>
+    </div>
     }
 
-    <!-- ====== INSTITUCIONES (SuperAdmin only) ====== -->
-    @if (activeTab() === 'instituciones') {
-      <div class="dash-section">
-        <app-institutions></app-institutions>
-      </div>
+
+
+    <!-- ====== ESTÁNDARES ====== -->
+    @if (activeTab() === 'estandares') {
+    <div class="dash-section">
+      <app-estandares></app-estandares>
+    </div>
     }
 
-    <!-- ====== CURSOS / LMS ====== -->
-    @if (activeTab() === 'cursos') {
-      <div class="dash-section">
-        <app-lms></app-lms>
-      </div>
-    }
-
-    <!-- ====== PARTICIPANTES ====== -->
-    @if (activeTab() === 'participantes') {
-      <div class="dash-section">
-        <app-participants></app-participants>
-      </div>
-    }
 
     <!-- ====== ASISTENCIA ====== -->
     @if (activeTab() === 'asistencia') {
-      <div class="dash-section">
-        <app-attendance></app-attendance>
-      </div>
+    <div class="dash-section">
+      <app-attendance></app-attendance>
+    </div>
     }
 
     <!-- ====== FORMULARIOS (Admin / SuperAdmin) ====== -->
     @if (activeTab() === 'formularios') {
-      <div class="dash-section">
-        <app-enrollment-forms-admin></app-enrollment-forms-admin>
-      </div>
+    <div class="dash-section">
+      <app-enrollment-forms-admin></app-enrollment-forms-admin>
+    </div>
     }
 
   </main>
+
 </div>
 
 <!-- Modal: Wizard de Formularios del propio participante -->
 @if (showMyWizard() && selectedMyEnrollment() && myParticipantRecord()) {
-  <app-enrollment-form-wizard
-    [enrollment]="selectedMyEnrollment()!"
-    [participant]="myParticipantRecord()!"
-    [initialStep]="wizardInitialStep()"
-    (closed)="closeMyWizard()"
-    (saved)="onMyWizardSaved()">
-  </app-enrollment-form-wizard>
+<app-enrollment-form-wizard [enrollment]="selectedMyEnrollment()!" [participant]="myParticipantRecord()!"
+  [initialStep]="wizardInitialStep()" (closed)="closeMyWizard()" (saved)="onMyWizardSaved()">
+</app-enrollment-form-wizard>
 }
 
-<!-- Modal: Gestión de certificaciones del instructor -->
-@if (showCertModal() && managingInstructor()) {
-  <div class="cert-modal-backdrop" (click)="closeCertModal()">
-    <div class="cert-modal-box" (click)="$event.stopPropagation()">
-      <div class="cert-modal-header">
-        <h3>Certificaciones de {{ managingInstructor()?.full_name }}</h3>
-        <button class="modal-close" (click)="closeCertModal()">×</button>
+<!-- Modal: Gestión de certificaciones del evaluador -->
+@if (showCertModal() && managingEvaluator()) {
+<div class="cert-modal-backdrop" (click)="closeCertModal()">
+  <div class="cert-modal-box" (click)="$event.stopPropagation()">
+    <div class="cert-modal-header">
+      <h3>Certificaciones de {{ managingEvaluator()?.full_name }}</h3>
+      <button class="modal-close" (click)="closeCertModal()">×</button>
+    </div>
+
+    <div class="cert-modal-body">
+      @if (!hasEvaluatorCredential()) {
+      <div class="cert-warning">
+        ⚠️ Este evaluador aún no tiene la <strong>credencial de evaluador</strong>.
+        No podrá ser asignado a ningún grupo hasta que se le agregue.
       </div>
+      }
 
-      <div class="cert-modal-body">
-        @if (!hasInstructorCredential()) {
-          <div class="cert-warning">
-            ⚠️ Este instructor aún no tiene la <strong>credencial de instructor</strong>.
-            No podrá ser asignado a ningún grupo hasta que se le agregue.
+      @if (loadingCerts()) {
+      <p class="section-sub">Cargando…</p>
+      } @else if (evaluatorCerts().length === 0) {
+      <p class="section-sub">Sin certificaciones registradas.</p>
+      } @else {
+      <div class="cert-list">
+        @for (c of evaluatorCerts(); track c.id) {
+        <div class="cert-item">
+          <div class="cert-item-info">
+            <span class="cert-type-badge" [class.credential]="c.type === 'EVALUATOR_CREDENTIAL'">
+              {{ certTypeLabel(c.type) }}
+            </span>
+            @if (c.code) { <span class="cert-code">{{ c.code }}</span> }
+            @if (c.name) { <span class="cert-name">{{ c.name }}</span> }
+            <span class="status-chip" [class.uploaded]="c.status === 'vigente'"
+              [class.missing]="c.status !== 'vigente'">
+              {{ c.status }}
+            </span>
+            @if (c.expires_at) { <span class="cert-expiry">Vence: {{ c.expires_at | date:'dd/MM/yyyy' }}</span> }
           </div>
-        }
-
-        @if (loadingCerts()) {
-          <p class="section-sub">Cargando…</p>
-        } @else if (instructorCerts().length === 0) {
-          <p class="section-sub">Sin certificaciones registradas.</p>
-        } @else {
-          <div class="cert-list">
-            @for (c of instructorCerts(); track c.id) {
-              <div class="cert-item">
-                <div class="cert-item-info">
-                  <span class="cert-type-badge" [class.credential]="c.type === 'INSTRUCTOR_CREDENTIAL'">
-                    {{ certTypeLabel(c.type) }}
-                  </span>
-                  @if (c.code) { <span class="cert-code">{{ c.code }}</span> }
-                  @if (c.name) { <span class="cert-name">{{ c.name }}</span> }
-                  <span class="status-chip" [class.uploaded]="c.status === 'vigente'" [class.missing]="c.status !== 'vigente'">
-                    {{ c.status }}
-                  </span>
-                  @if (c.expires_at) { <span class="cert-expiry">Vence: {{ c.expires_at | date:'dd/MM/yyyy' }}</span> }
-                </div>
-                <button class="card-action-btn danger" title="Eliminar" (click)="removeCertification(c.id)">×</button>
-              </div>
-            }
-          </div>
-        }
-
-        <div class="cert-add-form">
-          <h4>Agregar certificación</h4>
-          <div class="cert-add-row">
-            <select [value]="newCertType()" (change)="newCertType.set($any($event.target).value)">
-              <option value="INSTRUCTOR_CREDENTIAL">Credencial de instructor</option>
-              <option value="STANDARD">Certificación de estándar/curso</option>
-            </select>
-            @if (newCertType() === 'STANDARD') {
-              <input type="text" placeholder="Código (ej: EC0217)" [value]="newCertCode()" (input)="newCertCode.set($any($event.target).value)">
-            }
-          </div>
-          <div class="cert-add-row">
-            <input type="text" placeholder="Nombre (opcional)" [value]="newCertName()" (input)="newCertName.set($any($event.target).value)">
-            <input type="date" [value]="newCertExpires()" (input)="newCertExpires.set($any($event.target).value)">
-          </div>
-          <button class="btn-small primary" [disabled]="loadingCerts()" (click)="addCertification()">Agregar</button>
+          <button class="card-action-btn danger" title="Eliminar" (click)="removeCertification(c.id)">×</button>
         </div>
+        }
+      </div>
+      }
+
+      <div class="cert-add-form">
+        <h4>Agregar certificación</h4>
+        <div class="cert-add-row">
+          <select [value]="newCertType()" (change)="newCertType.set($any($event.target).value)">
+            <option value="EVALUATOR_CREDENTIAL">Credencial de evaluador</option>
+            <option value="STANDARD">Certificación de estándar/curso</option>
+          </select>
+          @if (newCertType() === 'STANDARD') {
+          <input type="text" placeholder="Código (ej: EC0217)" [value]="newCertCode()"
+            (input)="newCertCode.set($any($event.target).value)">
+          }
+        </div>
+        <div class="cert-add-row">
+          <input type="text" placeholder="Nombre (opcional)" [value]="newCertName()"
+            (input)="newCertName.set($any($event.target).value)">
+          <input type="date" [value]="newCertExpires()" (input)="newCertExpires.set($any($event.target).value)">
+        </div>
+        <button class="btn-small primary" [disabled]="loadingCerts()" (click)="addCertification()">Agregar</button>
       </div>
     </div>
   </div>
+</div>
+}
+
+<!-- Modal: Confirmar eliminación de usuario (SuperAdmin) -->
+@if (showDeleteUserModal() && deletingUser()) {
+<div class="cert-modal-backdrop" (click)="closeDeleteUserModal()">
+  <div class="cert-modal-box delete-user-modal-box" (click)="$event.stopPropagation()">
+    <div class="cert-modal-header">
+      <h3>Eliminar usuario</h3>
+      <button class="modal-close" (click)="closeDeleteUserModal()">×</button>
+    </div>
+
+    <div class="cert-modal-body">
+      <div class="cert-warning">
+        Esta acción es permanente y no se puede deshacer. Se eliminará la cuenta de
+        <strong>{{ deletingUser()?.full_name }}</strong> ({{ deletingUser()?.email }}).
+        Si el usuario tiene actividad asociada (cursos, certificados, documentos, etc.)
+        la eliminación se rechazará — en ese caso, desactívalo en su lugar.
+      </div>
+
+      <div class="delete-user-field">
+        <label>Confirma tu contraseña de Super Admin</label>
+        <input type="password" name="deleteUserConfirmPassword" autocomplete="off" data-lpignore="true" data-1p-ignore
+          placeholder="Tu contraseña" [value]="deleteUserPassword()"
+          (input)="deleteUserPassword.set($any($event.target).value)" (keyup.enter)="confirmDeleteUser()">
+        @if (deleteUserError()) { <span class="delete-user-error">{{ deleteUserError() }}</span> }
+      </div>
+
+      <div class="delete-user-modal-actions">
+        <button type="button" class="btn-small" [disabled]="deleteUserLoading()"
+          (click)="closeDeleteUserModal()">Cancelar</button>
+        <button type="button" class="btn-small danger" [disabled]="deleteUserLoading()" (click)="confirmDeleteUser()">
+          {{ deleteUserLoading() ? 'Eliminando…' : 'Eliminar usuario' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 }

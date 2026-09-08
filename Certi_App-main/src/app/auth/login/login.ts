@@ -46,10 +46,5 @@ export class LoginComponent {
       this.error.set(result.error ?? 'Error al iniciar sesión.');
     }
   }
-
-  // Quick login para testing
-  async loginAs(email: string, password: string) {
-    this.form.setValue({ email, password });
-    await this.onSubmit();
-  }
 }
+

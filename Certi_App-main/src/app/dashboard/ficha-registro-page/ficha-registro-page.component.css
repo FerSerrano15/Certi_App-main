@@ -92,6 +92,32 @@
 .fr-user-name  { font-size: 0.9rem; font-weight: 700; }
 .fr-user-email { font-size: 0.78rem; opacity: 0.8; }
 
+/* ── Estándar de competencia ───────────────────────────────────────────── */
+.fr-estandar-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f0fdfa;
+  border: 1.5px solid #99f6e4;
+  border-radius: 14px;
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 1.25rem;
+  color: #0d9488;
+}
+.fr-estandar-codigo {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.fr-estandar-nombre {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #134e4a;
+  margin-top: 0.1rem;
+}
+
 /* ── Aviso ──────────────────────────────────────────────────────────────── */
 .fr-notice {
   display: flex;
@@ -127,7 +153,16 @@
   border: 1.5px solid #d1fae5;
   box-shadow: 0 8px 32px rgba(16,185,129,0.12);
 }
-.fr-success-icon { font-size: 4rem; }
+.fr-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
 .fr-success-screen h2 { font-size: 1.5rem; font-weight: 800; color: #10b981; margin: 0; }
 .fr-success-screen p  { color: #64748b; margin: 0; font-size: 0.95rem; max-width: 420px; }
 
@@ -169,7 +204,17 @@
   align-items: center;
   gap: 0.75rem;
 }
-.fr-section-icon { font-size: 1.2rem; }
+.fr-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #f0f4ff;
+  color: #667eea;
+  flex-shrink: 0;
+}
 .fr-section-title {
   font-size: 0.95rem;
   font-weight: 700;
@@ -192,6 +237,23 @@
   animation: frFadeIn 0.2s ease both;
 }
 @keyframes frFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Subsección (dentro de una sección con varios grupos) ─────────────────── */
+.fr-subsection-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin: 0.5rem 0 -0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #e2e8f0;
+}
+.fr-subsection-title:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
 
 /* ── Grid layouts ───────────────────────────────────────────────────────── */
 .fr-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
@@ -264,6 +326,13 @@ textarea.fr-input { resize: vertical; min-height: 80px; }
 }
 .fr-radio-opt input,
 .fr-check-opt input { accent-color: #667eea; cursor: pointer; width: 16px; height: 16px; }
+
+.fr-terms-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 0.75rem;
+}
 
 /* ── Firma digital ──────────────────────────────────────────────────────── */
 .fr-sig-hint {

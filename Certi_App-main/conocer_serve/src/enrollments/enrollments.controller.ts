@@ -9,7 +9,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { SelfEnrollDto } from './dto/self-enroll.dto';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null; email: string };
+  user: { id: string; role: string; email: string };
 }
 
 @Controller('enrollments')

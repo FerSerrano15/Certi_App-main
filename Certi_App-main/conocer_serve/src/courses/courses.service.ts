@@ -10,7 +10,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 
-type JwtUser = { id: string; role: string; institution_id: string | null };
+type JwtUser = { id: string; role: string };
 
 @Injectable()
 export class CoursesService {
@@ -22,39 +22,9 @@ export class CoursesService {
 
   // ─── Guard helper ─────────────────────────────────────────────────────────
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
-  }
-
-  private async resolveInstitutionId(user: JwtUser, dto: { institution_id?: string }): Promise<string> {
-    if (dto?.institution_id) return dto.institution_id;
-    if (user?.institution_id) return user.institution_id;
-
-    // 1. Buscar si ya existe una institución activa en la base de datos
-    const { data } = await this.supabase.admin
-      .from('institutions')
-      .select('id')
-      .limit(1)
-      .maybeSingle<{ id: string }>();
-
-    if (data?.id) return data.id;
-
-    // 2. Si la base de datos no tiene ninguna institución, crear la institución por defecto automáticamente
-    const { data: newInst, error } = await this.supabase.admin
-      .from('institutions')
-      .insert({
-        name: 'Institución Principal',
-        slug: `inst-principal-${Date.now()}`,
-        is_active: true,
-      })
-      .select('id')
-      .single<{ id: string }>();
-
-    if (error || !newInst?.id) {
-      throw new ConflictException('No existe ninguna institución en la base de datos y no se pudo crear la por defecto.');
-    }
-    return newInst.id;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -62,24 +32,18 @@ export class CoursesService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async listPrograms(user: JwtUser) {
-    let q = this.supabase.admin.from('programs').select('*').order('name');
-    if (user.role === 'ADMIN_INSTITUCION' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
-    const { data, error } = await q;
+    const { data, error } = await this.supabase.admin.from('programs').select('*').order('name');
     if (error) throw new NotFoundException(error.message);
     return data ?? [];
   }
 
   async createProgram(dto: CreateProgramDto, user: JwtUser) {
     this.requireAdmin(user);
-    const instId = await this.resolveInstitutionId(user, dto);
     const { data, error } = await this.supabase.admin
       .from('programs')
       .insert({
         name: dto.name,
         description: dto.description ?? null,
-        institution_id: instId,
       })
       .select('*').single();
     if (error) {
@@ -110,17 +74,13 @@ export class CoursesService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async listCourses(user: JwtUser) {
-    let q = this.supabase.admin
+    const { data, error } = await this.supabase.admin
       .from('courses')
       .select(`
         *,
         programs ( id, name )
       `)
       .order('name');
-    if (user.role === 'ADMIN_INSTITUCION' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
-    const { data, error } = await q;
     if (error) throw new NotFoundException(error.message);
     return data ?? [];
   }
@@ -136,7 +96,6 @@ export class CoursesService {
 
   async createCourse(dto: CreateCourseDto, user: JwtUser) {
     this.requireAdmin(user);
-    const instId = await this.resolveInstitutionId(user, dto);
     const { data, error } = await this.supabase.admin
       .from('courses')
       .insert({
@@ -144,7 +103,7 @@ export class CoursesService {
         code:            dto.code,
         description:     dto.description ?? null,
         program_id:      dto.program_id ?? null,
-        institution_id:  instId,
+        estandar_id:     dto.estandar_id ?? null,
         duration_hours:  dto.duration_hours ?? 0,
         passing_grade:   dto.passing_grade ?? 70,
         min_attendance:  dto.min_attendance ?? 80,
@@ -170,7 +129,7 @@ export class CoursesService {
     const { error } = await this.supabase.admin.from('courses').delete().eq('id', id);
     if (error) throw new NotFoundException(error.message);
     await this.auditLogs.log({
-      user_id: user.id, institution_id: user.institution_id,
+      user_id: user.id,
       action: 'COURSE_DELETED', entity: 'courses', entityid: id,
     });
     return { message: 'Curso eliminado.' };
@@ -189,47 +148,43 @@ export class CoursesService {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  INSTRUCTORES ELEGIBLES
-  //  Un usuario puede ser asignado como instructor de un curso únicamente si:
-  //   1) Tiene el rol INSTRUCTOR y está activo.
-  //   2) Cuenta con la credencial general de instructor vigente.
-  //   3) Cuenta con la certificación vigente del estándar/curso (code) que impartirá.
+  //  EVALUADORES ELEGIBLES
+  //  Un usuario puede ser asignado como evaluador de un curso únicamente si:
+  //   1) Tiene el rol EVALUADOR y está activo.
+  //   2) Cuenta con la credencial general de evaluador vigente.
+  //   3) Cuenta con la certificación vigente del estándar/curso (code) que evaluará.
   // ════════════════════════════════════════════════════════════════════════════
 
-  async getEligibleInstructors(courseId: string, user: JwtUser) {
+  async getEligibleEvaluators(courseId: string, user: JwtUser) {
     const { data: course, error: courseErr } = await this.supabase.admin
       .from('courses')
-      .select('id, code, institution_id')
+      .select('id, code')
       .eq('id', courseId)
-      .single<{ id: string; code: string; institution_id: string | null }>();
+      .single<{ id: string; code: string }>();
     if (courseErr || !course) throw new NotFoundException('Curso no encontrado.');
 
-    let q = this.supabase.admin
+    const { data: evaluators, error } = await this.supabase.admin
       .from('users')
-      .select('id, full_name, email, phone, institution_id')
-      .eq('role', 'INSTRUCTOR')
+      .select('id, full_name, email, phone')
+      .eq('role', 'EVALUADOR')
       .eq('is_active', true);
-    if (user.role === 'ADMIN_INSTITUCION' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
-    const { data: instructors, error } = await q;
     if (error) throw new NotFoundException(error.message);
 
-    const [instructorCredHolders, standardHolders] = await Promise.all([
-      this.certifications.getUsersWithInstructorCredential(),
+    const [credentialHolders, standardHolders] = await Promise.all([
+      this.certifications.getUsersWithEvaluatorCredential(),
       this.certifications.getUsersWithStandardCode(course.code),
     ]);
 
-    return (instructors ?? []).filter(
-      (i: { id: string }) => instructorCredHolders.has(i.id) && standardHolders.has(i.id),
+    return (evaluators ?? []).filter(
+      (i: { id: string }) => credentialHolders.has(i.id) && standardHolders.has(i.id),
     );
   }
 
-  private async assertInstructorEligible(courseId: string, instructorId: string, user: JwtUser) {
-    const eligible = await this.getEligibleInstructors(courseId, user);
-    if (!eligible.some((i: { id: string }) => i.id === instructorId)) {
+  private async assertEvaluatorEligible(courseId: string, evaluatorId: string, user: JwtUser) {
+    const eligible = await this.getEligibleEvaluators(courseId, user);
+    if (!eligible.some((i: { id: string }) => i.id === evaluatorId)) {
       throw new ConflictException(
-        'El instructor seleccionado no cuenta con las certificaciones requeridas (credencial de instructor + certificación del curso) para impartir este curso.',
+        'El evaluador seleccionado no cuenta con las certificaciones requeridas (credencial de evaluador + certificación del curso) para este grupo.',
       );
     }
   }
@@ -248,31 +203,26 @@ export class CoursesService {
       `)
       .order('created_at', { ascending: false });
     if (courseId) q = q.eq('course_id', courseId);
-    if (user.role === 'ADMIN_INSTITUCION' && user.institution_id) {
-      q = q.eq('institution_id', user.institution_id);
-    }
     const { data, error } = await q;
     if (error) throw new NotFoundException(error.message);
     return data ?? [];
   }
 
-  async createGroup(dto: { course_id: string; name: string; instructor_id?: string; institution_id?: string; start_date?: string; end_date?: string; capacity?: number; status?: string }, user: JwtUser) {
+  async createGroup(dto: { course_id: string; name: string; evaluator_id?: string; start_date?: string; end_date?: string; capacity?: number; status?: string }, user: JwtUser) {
     this.requireAdmin(user);
-    if (dto.instructor_id) {
-      await this.assertInstructorEligible(dto.course_id, dto.instructor_id, user);
+    if (dto.evaluator_id) {
+      await this.assertEvaluatorEligible(dto.course_id, dto.evaluator_id, user);
     }
-    const instId = await this.resolveInstitutionId(user, dto);
     const { data, error } = await this.supabase.admin
       .from('groups')
       .insert({
-        course_id:      dto.course_id,
-        name:           dto.name,
-        instructor_id:  dto.instructor_id ?? null,
-        institution_id: instId,
-        start_date:     dto.start_date ?? null,
-        end_date:       dto.end_date ?? null,
-        capacity:       dto.capacity ?? null,
-        status:         dto.status ?? 'PLANEADO',
+        course_id:     dto.course_id,
+        name:          dto.name,
+        evaluator_id:  dto.evaluator_id ?? null,
+        start_date:    dto.start_date ?? null,
+        end_date:      dto.end_date ?? null,
+        capacity:      dto.capacity ?? null,
+        status:        dto.status ?? 'PLANEADO',
       })
       .select('*').single();
     if (error) throw new ConflictException(error.message);
@@ -281,13 +231,13 @@ export class CoursesService {
 
   async updateGroup(id: string, dto: Record<string, unknown>, user: JwtUser) {
     this.requireAdmin(user);
-    if (dto['instructor_id']) {
+    if (dto['evaluator_id']) {
       const { data: current } = await this.supabase.admin
         .from('groups').select('course_id').eq('id', id)
         .single<{ course_id: string }>();
       const courseId = (dto['course_id'] as string) ?? current?.course_id;
       if (courseId) {
-        await this.assertInstructorEligible(courseId, dto['instructor_id'] as string, user);
+        await this.assertEvaluatorEligible(courseId, dto['evaluator_id'] as string, user);
       }
     }
     const { data, error } = await this.supabase.admin
@@ -302,7 +252,7 @@ export class CoursesService {
     const { error } = await this.supabase.admin.from('groups').delete().eq('id', id);
     if (error) throw new NotFoundException(error.message);
     await this.auditLogs.log({
-      user_id: user.id, institution_id: user.institution_id,
+      user_id: user.id,
       action: 'GROUP_DELETED', entity: 'groups', entityid: id,
     });
     return { message: 'Grupo eliminado.' };

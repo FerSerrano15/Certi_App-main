@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 
 export interface Certificate {
   id: string;
-  institution_id: string;
   participant_id: string;
   course_id: string;
   enrollment_id: string | null;
@@ -30,7 +29,6 @@ export interface CertificateVerification {
   participant_name?: string | null;
   course_name?: string | null;
   course_code?: string | null;
-  institution_name?: string | null;
   issued_at?: string;
   expires_at?: string | null;
   final_grade?: number | null;

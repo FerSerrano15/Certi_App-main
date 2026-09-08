@@ -6,7 +6,6 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CoursesModule } from './courses/courses.module';
-import { InstitutionsModule } from './institutions/institutions.module';
 import { ParticipantsModule } from './participants/participants.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { AttendanceModule } from './attendance/attendance.module';
@@ -16,6 +15,11 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { DocumentsModule } from './documents/documents.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { LandingContentModule } from './landing-content/landing-content.module';
+import { PdfModule } from './pdf/pdf.module';
+import { EstandaresModule } from './estandares/estandares.module';
+import { EvaluacionesModule } from './evaluaciones/evaluaciones.module';
+import { FichaRegistroModule } from './ficha-registro/ficha-registro.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,7 +34,6 @@ import { LandingContentModule } from './landing-content/landing-content.module';
     AuthModule,
     UsersModule,
     CoursesModule,
-    InstitutionsModule,
     ParticipantsModule,
     EnrollmentsModule,
     AttendanceModule,
@@ -40,6 +43,11 @@ import { LandingContentModule } from './landing-content/landing-content.module';
     DocumentsModule,
     CertificatesModule,
     LandingContentModule,
+    PdfModule,
+    EstandaresModule,
+    EvaluacionesModule,
+    NotificationsModule,
+    FichaRegistroModule,
   ],
   controllers: [AppController],
   providers: [AppService],

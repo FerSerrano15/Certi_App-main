@@ -9,8 +9,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { ParticipantsService } from '../participants/participants.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
-type JwtUser = { id: string; role: string; institution_id: string | null; email: string };
-type ParticipantRow = { id: string; institution_id: string | null; user_id: string | null };
+type JwtUser = { id: string; role: string; email: string };
+type ParticipantRow = { id: string; user_id: string | null };
 
 const BUCKET = 'documents';
 
@@ -23,13 +23,13 @@ export class DocumentsService {
   ) {}
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
 
-  private requireAtLeastCoordinator(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR', 'INSTRUCTOR'].includes(user.role)) {
+  private requireAtLeastEvaluator(user: JwtUser) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'EVALUADOR'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
@@ -38,9 +38,9 @@ export class DocumentsService {
   //  UPLOAD
   // ════════════════════════════════════════════════════════════════════════════
 
-  /** El propio candidato (OPERADOR) sube un documento suyo. */
+  /** El propio candidato (CANDIDATO) sube un documento suyo. */
   async uploadSelf(file: Express.Multer.File | undefined, type: string, user: JwtUser) {
-    if (user.role !== 'OPERADOR') {
+    if (user.role !== 'CANDIDATO') {
       throw new ForbiddenException('Esta acción es solo para candidatos.');
     }
     const participant = await this.participants.resolveOrCreateSelfParticipant(user);
@@ -56,7 +56,7 @@ export class DocumentsService {
     this.requireAdmin(user);
     const { data: participant, error } = await this.supabase.admin
       .from('participants')
-      .select('id, institution_id, user_id')
+      .select('id, user_id')
       .eq('id', dto.participant_id)
       .single<ParticipantRow>();
     if (error || !participant) throw new NotFoundException('Participante no encontrado.');
@@ -75,9 +75,8 @@ export class DocumentsService {
       );
     }
 
-    const institutionId = participant.institution_id ?? user.institution_id;
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `${institutionId ?? 'sin-institucion'}/${participant.id}/${Date.now()}-${safeName}`;
+    const storagePath = `${participant.id}/${Date.now()}-${safeName}`;
 
     const { error: uploadErr } = await this.supabase.admin.storage
       .from(BUCKET)
@@ -91,7 +90,6 @@ export class DocumentsService {
     const { data, error } = await this.supabase.admin
       .from('documents')
       .insert({
-        institution_id: institutionId,
         participant_id: participant.id,
         type,
         file_path: storagePath,
@@ -111,7 +109,6 @@ export class DocumentsService {
 
     await this.auditLogs.log({
       user_id: user.id,
-      institution_id: institutionId,
       action: 'DOCUMENT_UPLOADED',
       entity: 'documents',
       entityid: data.id,
@@ -131,16 +128,13 @@ export class DocumentsService {
       .select('*, participants ( id, full_name, email )')
       .order('uploaded_at', { ascending: false });
 
-    if (user.role === 'OPERADOR') {
+    if (user.role === 'CANDIDATO') {
       // Un candidato solo puede ver sus propios documentos, sin importar el query param.
       const own = await this.participants.resolveOrCreateSelfParticipant(user);
       q = q.eq('participant_id', own.id);
     } else {
-      this.requireAtLeastCoordinator(user);
+      this.requireAtLeastEvaluator(user);
       if (participantId) q = q.eq('participant_id', participantId);
-      if (user.role !== 'SUPER_ADMIN' && user.institution_id) {
-        q = q.eq('institution_id', user.institution_id);
-      }
     }
 
     const { data, error } = await q;
@@ -156,13 +150,13 @@ export class DocumentsService {
       .single<{ id: string; file_path: string; participant_id: string | null }>();
     if (error || !doc) throw new NotFoundException('Documento no encontrado.');
 
-    if (user.role === 'OPERADOR') {
+    if (user.role === 'CANDIDATO') {
       const own = await this.participants.resolveOrCreateSelfParticipant(user);
       if (doc.participant_id !== own.id) {
         throw new ForbiddenException('No puedes ver este documento.');
       }
     } else {
-      this.requireAtLeastCoordinator(user);
+      this.requireAtLeastEvaluator(user);
     }
 
     const { data, error: signErr } = await this.supabase.admin.storage
@@ -188,7 +182,6 @@ export class DocumentsService {
 
     await this.auditLogs.log({
       user_id: user.id,
-      institution_id: user.institution_id,
       action: status === 'validated' ? 'DOCUMENT_VALIDATED' : 'DOCUMENT_REJECTED',
       entity: 'documents',
       entityid: id,
@@ -215,7 +208,7 @@ export class DocumentsService {
     if (error) throw new NotFoundException(error.message);
 
     await this.auditLogs.log({
-      user_id: user.id, institution_id: user.institution_id,
+      user_id: user.id,
       action: 'DOCUMENT_DELETED', entity: 'documents', entityid: id,
     });
 

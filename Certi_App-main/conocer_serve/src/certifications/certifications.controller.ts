@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null };
+  user: { id: string; role: string };
 }
 
 @Controller('certifications')

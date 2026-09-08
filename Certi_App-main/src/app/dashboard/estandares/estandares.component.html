@@ -1,0 +1,239 @@
+<div class="est-wrap">
+
+  @if (toast()) {
+    <div class="est-toast">{{ toast() }}</div>
+  }
+
+  <!-- ══════════ VISTA: LISTADO DE ESTÁNDARES ══════════ -->
+  @if (view() === 'list') {
+    <div class="est-header">
+      <div>
+        <h2 class="est-title">Estándares de Competencia</h2>
+        <p class="est-subtitle">Catálogo de estándares, sus Guías de Observación y Reactivos</p>
+      </div>
+      <button class="btn-est-primary" (click)="openNewEstandar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Nuevo estándar
+      </button>
+    </div>
+
+    <div class="est-search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="est-search" type="text" placeholder="Buscar por código o nombre…"
+             [value]="search()" (input)="search.set($any($event.target).value)">
+    </div>
+
+    @if (loading()) {
+      <div class="est-loading"><div class="est-spinner"></div><span>Cargando…</span></div>
+    } @else if (filteredEstandares().length === 0) {
+      <div class="est-empty">
+        <p>Sin estándares registrados todavía.</p>
+        <button class="btn-est-primary" (click)="openNewEstandar()">Crear el primero</button>
+      </div>
+    } @else {
+      <div class="est-table-wrap">
+        <table class="est-table">
+          <thead>
+            <tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Versión</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            @for (e of filteredEstandares(); track e.id) {
+              <tr (click)="openDetail(e)">
+                <td class="est-code">{{ e.codigo }}</td>
+                <td>{{ e.nombre }}</td>
+                <td>{{ e.categoria || '—' }}</td>
+                <td>v{{ e.version }}</td>
+                <td>
+                  <span class="est-chip" [class.ok]="e.vigente" [class.off]="!e.vigente">
+                    {{ e.vigente ? 'Vigente' : 'No vigente' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="est-row-actions">
+                    <button class="est-icon-btn" title="Editar" (click)="openEditEstandar(e, $event)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="est-icon-btn danger" title="Eliminar" (click)="deleteEstandar(e, $event)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- ══════════ VISTA: DETALLE DE ESTÁNDAR ══════════ -->
+  @if (view() === 'detail' && selectedEstandar(); as est) {
+    <button class="est-back" (click)="backToList()">← Volver al catálogo</button>
+
+    <div class="est-detail-header">
+      <div>
+        <div class="est-detail-code">{{ est.codigo }} <span class="est-chip" [class.ok]="est.vigente" [class.off]="!est.vigente">{{ est.vigente ? 'Vigente' : 'No vigente' }}</span></div>
+        <h2 class="est-detail-title">{{ est.nombre }}</h2>
+        <p class="est-detail-meta">{{ est.categoria || 'Sin categoría' }} · versión {{ est.version }}</p>
+      </div>
+      <div class="est-detail-actions">
+        <button class="btn-est-secondary" (click)="openEditEstandar(est, $event)">Editar</button>
+        <button class="btn-est-secondary" (click)="bumpVersion()">Nueva versión</button>
+      </div>
+    </div>
+
+    <div class="est-guias-header">
+      <h3>Guías de Observación</h3>
+      <button class="btn-est-primary" (click)="openNewGuia()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Nueva guía
+      </button>
+    </div>
+
+    @if (!est.guias || est.guias.length === 0) {
+      <div class="est-empty"><p>Este estándar todavía no tiene Guías de Observación.</p></div>
+    } @else {
+      @for (g of est.guias; track g.id) {
+        <div class="est-guia-card">
+          <div class="est-guia-header">
+            <div>
+              <h4>{{ g.titulo }}</h4>
+              @if (g.instrucciones) { <p class="est-guia-instrucciones">{{ g.instrucciones }}</p> }
+            </div>
+            <div class="est-row-actions">
+              <span class="est-peso-total">Peso total: {{ pesoTotalGuia(g) }}</span>
+              <button class="est-icon-btn" title="Editar guía" (click)="openEditGuia(g)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="est-icon-btn danger" title="Eliminar guía" (click)="deleteGuia(g)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <table class="est-reactivos-table">
+            <thead>
+              <tr><th>Código</th><th>Reactivo</th><th>Peso</th><th>Act./Val.</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (r of g.reactivos; track r.id) {
+                <tr>
+                  <td class="est-code">{{ r.codigo_reactivo }}</td>
+                  <td>{{ r.descripcion }}</td>
+                  <td>{{ r.peso }}</td>
+                  <td>{{ r.es_actitud_valor ? 'Sí' : '—' }}</td>
+                  <td>
+                    <div class="est-row-actions">
+                      <button class="est-icon-btn" title="Editar" (click)="openEditReactivo(g, r)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="est-icon-btn danger" title="Eliminar" (click)="deleteReactivo(r)">×</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="est-empty-row">Sin reactivos todavía.</td></tr>
+              }
+            </tbody>
+          </table>
+
+          <button class="btn-est-secondary sm" (click)="openNewReactivo(g)">+ Agregar reactivo</button>
+        </div>
+      }
+    }
+  }
+
+  <!-- ══════════ MODAL: Estándar ══════════ -->
+  @if (showEstandarModal()) {
+    <div class="est-modal-backdrop" (click)="showEstandarModal.set(false)">
+      <div class="est-modal-box" (click)="$event.stopPropagation()">
+        <div class="est-modal-header">
+          <h3>{{ editingEstandar() ? 'Editar estándar' : 'Nuevo estándar' }}</h3>
+          <button class="est-modal-close" (click)="showEstandarModal.set(false)">×</button>
+        </div>
+        <form [formGroup]="estandarForm" (ngSubmit)="saveEstandar()" class="est-form">
+          <div class="est-form-group">
+            <label>Código *</label>
+            <input type="text" formControlName="codigo" placeholder="Ej: EC0755">
+          </div>
+          <div class="est-form-group">
+            <label>Nombre *</label>
+            <input type="text" formControlName="nombre" placeholder="Nombre del estándar">
+          </div>
+          <div class="est-form-group">
+            <label>Categoría</label>
+            <input type="text" formControlName="categoria" placeholder="Ej: Administración">
+          </div>
+          <label class="est-checkbox-row">
+            <input type="checkbox" formControlName="vigente"> Vigente
+          </label>
+          <button type="submit" class="btn-est-primary" [disabled]="loading()">Guardar</button>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ MODAL: Guía de Observación ══════════ -->
+  @if (showGuiaModal()) {
+    <div class="est-modal-backdrop" (click)="showGuiaModal.set(false)">
+      <div class="est-modal-box" (click)="$event.stopPropagation()">
+        <div class="est-modal-header">
+          <h3>{{ editingGuia() ? 'Editar guía' : 'Nueva guía de observación' }}</h3>
+          <button class="est-modal-close" (click)="showGuiaModal.set(false)">×</button>
+        </div>
+        <form [formGroup]="guiaForm" (ngSubmit)="saveGuia()" class="est-form">
+          <div class="est-form-group">
+            <label>Título *</label>
+            <input type="text" formControlName="titulo" placeholder="Ej: Guía de Observación 1">
+          </div>
+          <div class="est-form-group">
+            <label>Instrucciones para el evaluador</label>
+            <textarea formControlName="instrucciones" rows="4" placeholder="Instrucciones..."></textarea>
+          </div>
+          <div class="est-form-group">
+            <label>Orden</label>
+            <input type="number" formControlName="orden" min="1">
+          </div>
+          <button type="submit" class="btn-est-primary" [disabled]="loading()">Guardar</button>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════ MODAL: Reactivo ══════════ -->
+  @if (showReactivoModal()) {
+    <div class="est-modal-backdrop" (click)="showReactivoModal.set(false)">
+      <div class="est-modal-box" (click)="$event.stopPropagation()">
+        <div class="est-modal-header">
+          <h3>{{ editingReactivo() ? 'Editar reactivo' : 'Nuevo reactivo' }}</h3>
+          <button class="est-modal-close" (click)="showReactivoModal.set(false)">×</button>
+        </div>
+        <form [formGroup]="reactivoForm" (ngSubmit)="saveReactivo()" class="est-form">
+          <div class="est-form-group">
+            <label>Código del reactivo *</label>
+            <input type="text" formControlName="codigo_reactivo" placeholder="Ej: 1.1/5-D1E1">
+          </div>
+          <div class="est-form-group">
+            <label>Descripción *</label>
+            <textarea formControlName="descripcion" rows="3" placeholder="Describe la actividad a observar"></textarea>
+          </div>
+          <div class="est-form-row">
+            <div class="est-form-group">
+              <label>Peso *</label>
+              <input type="number" formControlName="peso" min="0" step="0.01">
+            </div>
+            <div class="est-form-group">
+              <label>Orden</label>
+              <input type="number" formControlName="orden" min="1">
+            </div>
+          </div>
+          <label class="est-checkbox-row">
+            <input type="checkbox" formControlName="es_actitud_valor"> Es de tipo Actitud/Hábito/Valor
+          </label>
+          <button type="submit" class="btn-est-primary" [disabled]="loading()">Guardar</button>
+        </form>
+      </div>
+    </div>
+  }
+
+</div>

@@ -17,16 +17,6 @@ export const routes: Routes = [
     canActivate: [guestGuard]
   },
   {
-    path: 'registro/candidato',
-    loadComponent: () => import('./auth/registro-candidato/registro-candidato').then(m => m.RegistroCandidatoComponent),
-    canActivate: [guestGuard]
-  },
-  {
-    path: 'registro/evaluador',
-    loadComponent: () => import('./auth/registro-evaluador/registro-evaluador').then(m => m.RegistroEvaluadorComponent),
-    canActivate: [guestGuard]
-  },
-  {
     path: 'dashboard',
     loadComponent: () => import('./dashboard/dashboard').then(m => m.DashboardComponent),
     canActivate: [authGuard]

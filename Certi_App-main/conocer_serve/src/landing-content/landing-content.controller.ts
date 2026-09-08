@@ -3,7 +3,7 @@ import { LandingContentService } from './landing-content.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null };
+  user: { id: string; role: string };
 }
 
 @Controller('landing')

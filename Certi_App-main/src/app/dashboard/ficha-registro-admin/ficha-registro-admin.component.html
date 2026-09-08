@@ -1,0 +1,83 @@
+<div class="fa-wrap">
+  <div class="fa-header">
+    <div>
+      <h2 class="fa-title">Solicitudes de Ficha de Registro</h2>
+      <p class="fa-sub">Fichas enviadas por los candidatos, una por cada estándar de competencia.</p>
+    </div>
+  </div>
+
+  <div class="fa-toolbar">
+    <input
+      class="fa-search"
+      type="text"
+      placeholder="Buscar por candidato, correo o estándar…"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+    >
+    <div class="fa-status-filter">
+      @for (opt of statusFilters; track opt.value) {
+        <button
+          type="button"
+          class="fa-chip"
+          [class.active]="statusFilter() === opt.value"
+          (click)="statusFilter.set(opt.value)"
+        >{{ opt.label }}</button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="fa-empty">Cargando…</div>
+  } @else if (filtered().length === 0) {
+    <div class="fa-empty">No hay solicitudes que coincidan.</div>
+  } @else {
+    <div class="table-wrap">
+      <table class="fa-table">
+        <thead>
+          <tr>
+            <th>Candidato</th>
+            <th>Estándar</th>
+            <th>Enviada</th>
+            <th>Estado</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filtered(); track f.id) {
+            <tr>
+              <td>
+                <div class="fa-candidato">
+                  <span class="fa-candidato-nombre">{{ f.users?.full_name ?? '—' }}</span>
+                  <span class="fa-candidato-email">{{ f.users?.email ?? '' }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="fa-estandar-codigo">{{ f.estandar_codigo }}</span>
+                <span class="fa-estandar-nombre">{{ f.estandar_nombre }}</span>
+              </td>
+              <td>{{ f.submitted_at | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <select
+                  class="fa-status-select"
+                  [class]="'status-' + f.status"
+                  [value]="f.status"
+                  [disabled]="updatingId() === f.id"
+                  (change)="changeStatus(f, $any($event.target).value)"
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+              </td>
+              <td>
+                <button class="fa-btn" [disabled]="downloadingId() === f.id" (click)="verPdf(f)">
+                  {{ downloadingId() === f.id ? 'Abriendo…' : 'Ver PDF' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

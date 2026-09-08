@@ -18,7 +18,7 @@ export class CreateCourseDto {
   program_id?: string;
 
   @IsOptional() @IsUUID()
-  institution_id?: string;
+  estandar_id?: string;
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
   duration_hours?: number;

@@ -576,8 +576,7 @@
 }
 
 .proceso-left {
-  position: sticky;
-  top: 6rem;
+  position: static;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

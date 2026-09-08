@@ -136,7 +136,7 @@
 
 /* PROCESO */
 .proceso-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 5rem; align-items: start; }
-.proceso-left { position: sticky; top: 6rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.proceso-left { position: static; display: flex; flex-direction: column; gap: 1.25rem; }
 .proceso-left .section-title { margin-bottom: 0; }
 .proceso-link { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; color: #0d2137; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; border-radius: 10px; cursor: pointer; transition: all 0.2s; width: fit-content; }
 .proceso-link:hover { background: #e2e8f0; transform: translateY(-1px); }

@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 
 export interface Program {
   id: string;
-  institution_id: string | null;
   name: string;
   description: string | null;
   is_active: boolean;
@@ -14,8 +13,8 @@ export interface Program {
 
 export interface Course {
   id: string;
-  institution_id: string | null;
   program_id: string | null;
+  estandar_id: string | null;
   name: string;
   code: string;
   description: string | null;
@@ -32,8 +31,7 @@ export interface Course {
 export interface Group {
   id: string;
   course_id: string;
-  institution_id: string | null;
-  instructor_id: string | null;
+  evaluator_id: string | null;
   name: string;
   start_date: string | null;
   end_date: string | null;
@@ -44,7 +42,7 @@ export interface Group {
   users?: { id: string; full_name: string } | null;
 }
 
-export interface EligibleInstructor {
+export interface EligibleEvaluator {
   id: string;
   full_name: string;
   email: string;
@@ -141,9 +139,9 @@ export class CoursesService {
     catch { return false; }
   }
 
-  /** Instructores que cuentan con la credencial de instructor + la certificación del curso. */
-  async getEligibleInstructors(courseId: string): Promise<EligibleInstructor[]> {
-    try { return await firstValueFrom(this.api.get<EligibleInstructor[]>(`/courses/${courseId}/eligible-instructors`, this.token())); }
+  /** Evaluadores que cuentan con la credencial de evaluador + la certificación del curso. */
+  async getEligibleEvaluators(courseId: string): Promise<EligibleEvaluator[]> {
+    try { return await firstValueFrom(this.api.get<EligibleEvaluator[]>(`/courses/${courseId}/eligible-evaluators`, this.token())); }
     catch { return []; }
   }
 

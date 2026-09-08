@@ -3,16 +3,14 @@ import {
   IsString,
   MinLength,
   IsOptional,
-  IsUUID,
   IsIn,
 } from 'class-validator';
 
 export type UserRole =
   | 'SUPER_ADMIN'
-  | 'ADMIN_INSTITUCION'
-  | 'COORDINADOR'
-  | 'INSTRUCTOR'
-  | 'OPERADOR';
+  | 'ADMIN'
+  | 'EVALUADOR'
+  | 'CANDIDATO';
 
 export class RegisterDto {
   @IsString({ message: 'El nombre completo es requerido.' })
@@ -31,12 +29,12 @@ export class RegisterDto {
   phone?: string;
 
   @IsOptional()
-  @IsIn(['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR', 'INSTRUCTOR', 'OPERADOR'], {
+  @IsIn(['SUPER_ADMIN', 'ADMIN', 'EVALUADOR', 'CANDIDATO'], {
     message: 'Rol inválido.',
   })
   role?: UserRole;
 
   @IsOptional()
-  @IsUUID('4', { message: 'institution_id debe ser un UUID válido.' })
-  institution_id?: string;
+  @IsString()
+  institution_name?: string;
 }

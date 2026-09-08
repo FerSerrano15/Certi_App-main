@@ -24,7 +24,7 @@ export interface EnrollmentFormWithParticipant extends EnrollmentForm {
   enrollments?: {
     id: string;
     status: string;
-    participants?: { id: string; full_name: string; email: string; national_id: string | null; institution_id: string | null } | null;
+    participants?: { id: string; full_name: string; email: string; national_id: string | null } | null;
     groups?: { id: string; name: string; courses?: { id: string; name: string; code: string } | null } | null;
   } | null;
 }

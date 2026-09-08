@@ -225,7 +225,7 @@
             {{ getStatusLabel(selectedGroup()?.status ?? '') }}
           </div>
           <h2>{{ selectedGroup()?.name }}</h2>
-          <p>🎓 Instructor: {{ selectedGroup()?.users?.full_name ?? 'Sin asignar' }}</p>
+          <p>🎓 Evaluador: {{ selectedGroup()?.users?.full_name ?? 'Sin asignar' }}</p>
           <div class="course-hero-stats">
             <div class="hero-stat"><span class="hero-stat-val">{{ sessions().length }}</span><span class="hero-stat-label">Sesiones</span></div>
             <div class="hero-stat"><span class="hero-stat-val">{{ groupEnrollments().length }}</span><span class="hero-stat-label">Participantes</span></div>
@@ -273,11 +273,19 @@
                   · <span class="doc-chip" [class.ok]="enr.documents_validated">
                     {{ enr.documents_validated ? 'Documentos validados' : 'Documentos pendientes' }}
                   </span>
+                  @if (enr.final_grade !== null && enr.final_grade !== undefined) {
+                    · <span class="doc-chip" [class.ok]="enr.competency_result === 'competente'">
+                      {{ enr.final_grade }}% — {{ enr.competency_result === 'competente' ? 'Competente' : 'Aún no competente' }}
+                    </span>
+                  }
                 </div>
               </div>
-              <button class="card-action-btn danger" title="Quitar del grupo" (click)="removeParticipant(enr)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              </button>
+              <div style="display:flex;gap:0.4rem">
+                <button class="btn-lms-secondary" style="padding:0.4rem 0.75rem;font-size:0.78rem" (click)="openEvaluacion(enr)">Evaluar</button>
+                <button class="card-action-btn danger" title="Quitar del grupo" (click)="removeParticipant(enr)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -358,6 +366,17 @@
               <option [value]="p.id">{{ p.name }}</option>
             }
           </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>Estándar de competencia</label>
+          <select formControlName="estandar_id">
+            <option value="">Sin estándar vinculado</option>
+            @for (e of estandares(); track e.id) {
+              <option [value]="e.id">{{ e.codigo }} — {{ e.nombre }}</option>
+            }
+          </select>
+          <span class="modal-hint">Necesario para poder evaluar a los candidatos de este curso con la Guía de Observación.</span>
         </div>
 
         <div class="modal-form-row three">
@@ -470,21 +489,21 @@
         </div>
 
         <div class="modal-form-group">
-          <label>Instructor</label>
-          <select formControlName="instructor_id">
+          <label>Evaluador</label>
+          <select formControlName="evaluator_id">
             <option value="">Sin asignar</option>
-            @for (i of eligibleInstructors(); track i.id) {
+            @for (i of eligibleEvaluators(); track i.id) {
               <option [value]="i.id">{{ i.full_name }}</option>
             }
           </select>
-          @if (loadingInstructors()) {
-            <span class="modal-hint">Cargando instructores certificados…</span>
-          } @else if (eligibleInstructors().length === 0) {
+          @if (loadingEvaluators()) {
+            <span class="modal-hint">Cargando evaluadores certificados…</span>
+          } @else if (eligibleEvaluators().length === 0) {
             <span class="modal-hint warn">
-              Ningún instructor cuenta aún con la credencial de instructor y la certificación de este curso. Asigna esas certificaciones desde "Instructores".
+              Ningún evaluador cuenta aún con la credencial de evaluador y la certificación de este curso. Asigna esas certificaciones desde "Usuarios".
             </span>
           } @else {
-            <span class="modal-hint">Solo se muestran instructores con credencial de instructor + certificación de este curso.</span>
+            <span class="modal-hint">Solo se muestran evaluadores con credencial de evaluador + certificación de este curso.</span>
           }
         </div>
 
@@ -591,6 +610,77 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODAL: Evaluación (Guía de Observación) ══════════ -->
+@if (showEvalModal()) {
+  <div class="modal-backdrop" (click)="closeEvalModal()">
+    <div class="modal-box eval-modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Evaluar a {{ evaluatingEnrollment()?.participants?.full_name }}</h3>
+        <button class="modal-close" (click)="closeEvalModal()">×</button>
+      </div>
+
+      <div class="eval-modal-body">
+        @if (evalLoading()) {
+          <div class="lms-loading"><div class="lms-spinner"></div><span>Cargando reactivos…</span></div>
+        } @else if (evalError()) {
+          <div class="modal-hint warn" style="display:block;padding:1rem">{{ evalError() }}</div>
+        } @else {
+          <div class="eval-score-bar">
+            <div class="eval-score-fill" [style.width.%]="evalPorcentaje()"></div>
+            <span class="eval-score-label">{{ evalPesoObtenido() }} / {{ evalPesoTotal() }} pts · {{ evalPorcentaje() }}%</span>
+          </div>
+
+          @for (grupo of evalGrouped(); track grupo.titulo) {
+            <div class="eval-guia-block">
+              <h4>{{ grupo.titulo }}</h4>
+              @for (row of grupo.rows; track row.id) {
+                <div class="eval-reactivo-row">
+                  <div class="eval-reactivo-text">
+                    <span class="eval-code">{{ row.reactivos?.codigo_reactivo }}</span>
+                    <span>{{ row.reactivos?.descripcion }}</span>
+                    <span class="eval-peso-badge">{{ row.reactivos?.peso }} pts</span>
+                  </div>
+                  <div class="eval-reactivo-controls">
+                    <label class="eval-radio">
+                      <input type="radio" [name]="'r-' + row.id" [checked]="row.respuesta === true" (change)="setRespuesta(row.id, true)"> Sí
+                    </label>
+                    <label class="eval-radio">
+                      <input type="radio" [name]="'r-' + row.id" [checked]="row.respuesta === false" (change)="setRespuesta(row.id, false)"> No
+                    </label>
+                    <input
+                      type="text"
+                      class="eval-obs-input"
+                      placeholder="Observaciones"
+                      [value]="row.observaciones ?? ''"
+                      (change)="setObservacion(row.id, $any($event.target).value)"
+                    >
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (evalResult(); as result) {
+            <div class="eval-result-banner" [class.ok]="result.competency_result === 'competente'">
+              Resultado: {{ result.final_grade }}% — {{ result.competency_result === 'competente' ? 'Competente' : 'Aún no competente' }}
+            </div>
+          }
+        }
+      </div>
+
+      @if (!evalLoading() && !evalError()) {
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeEvalModal()">Cerrar</button>
+          <button type="button" class="btn-modal-save" [disabled]="evalSaving()" (click)="guardarEvaluacion()">
+            @if (evalSaving()) { <span class="btn-spinner"></span> }
+            Guardar y calcular
+          </button>
+        </div>
+      }
     </div>
   </div>
 }

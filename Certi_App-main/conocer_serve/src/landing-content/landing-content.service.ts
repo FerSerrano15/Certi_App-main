@@ -7,7 +7,7 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
-type JwtUser = { id: string; role: string; institution_id: string | null };
+type JwtUser = { id: string; role: string };
 
 // Fila única (singleton) — coincide con el DEFAULT del id en la tabla.
 const LANDING_ID = '00000000-0000-0000-0000-000000000001';
@@ -47,7 +47,6 @@ export class LandingContentService {
 
     await this.auditLogs.log({
       user_id: user.id,
-      institution_id: user.institution_id,
       action: 'LANDING_CONTENT_UPDATED',
       entity: 'landing_content',
       entityid: LANDING_ID,

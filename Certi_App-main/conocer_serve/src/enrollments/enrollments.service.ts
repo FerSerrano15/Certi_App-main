@@ -9,7 +9,7 @@ import { ParticipantsService } from '../participants/participants.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 
-type JwtUser = { id: string; role: string; institution_id: string | null; email: string };
+type JwtUser = { id: string; role: string; email: string };
 
 @Injectable()
 export class EnrollmentsService {
@@ -20,7 +20,7 @@ export class EnrollmentsService {
   ) {}
 
   private requireAdmin(user: JwtUser) {
-    if (!['SUPER_ADMIN', 'ADMIN_INSTITUCION', 'COORDINADOR'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       throw new ForbiddenException('No tienes permisos para esta acción.');
     }
   }
@@ -62,12 +62,12 @@ export class EnrollmentsService {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  SELF-ENROLL — El propio candidato (OPERADOR) solicita inscripción a un grupo
+  //  SELF-ENROLL — El propio candidato (CANDIDATO) solicita inscripción a un grupo
   //  Crea (o vincula) su registro de participante automáticamente si no existe.
   // ════════════════════════════════════════════════════════════════════════════
 
   async selfEnroll(groupId: string, user: JwtUser) {
-    if (user.role !== 'OPERADOR') {
+    if (user.role !== 'CANDIDATO') {
       throw new ForbiddenException('Esta acción es solo para candidatos.');
     }
 
@@ -168,7 +168,7 @@ export class EnrollmentsService {
       .eq('id', id);
     if (error) throw new NotFoundException(error.message);
     await this.auditLogs.log({
-      user_id: user.id, institution_id: user.institution_id,
+      user_id: user.id,
       action: 'ENROLLMENT_DELETED', entity: 'enrollments', entityid: id,
     });
     return { message: 'Inscripción eliminada.' };

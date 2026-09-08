@@ -9,7 +9,7 @@ import { IssueCertificateDto } from './dto/issue-certificate.dto';
 import { RevokeCertificateDto } from './dto/revoke-certificate.dto';
 
 interface Req extends Request {
-  user: { id: string; role: string; institution_id: string | null; email: string };
+  user: { id: string; role: string; email: string };
 }
 
 @Controller('certificates')

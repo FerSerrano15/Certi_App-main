@@ -5,12 +5,20 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Habilitar CORS para Angular (localhost:4200 en desarrollo)
+  // Habilitar CORS: Angular (localhost:4200) y Flutter web (puerto variable
+  // asignado por `flutter run -d chrome`), ambos en localhost/127.0.0.1.
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL ?? 'http://localhost:4200',
-      'http://localhost:4200',
-    ],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin === (process.env.FRONTEND_URL ?? 'http://localhost:4200') ||
+        /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Origen no permitido por CORS.'), false);
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

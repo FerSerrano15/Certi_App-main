@@ -1,13 +1,21 @@
 import {
   Component, inject, signal, OnInit,
-  ElementRef, ViewChild, OnDestroy, output,
+  ElementRef, ViewChild, OnDestroy, output, input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { EnrollmentFormsService } from '../../core/services/enrollment-forms.service';
-import { ParticipantsService } from '../../core/services/participants.service';
+import { FichaRegistroService } from '../../core/services/ficha-registro.service';
+import { Estandar } from '../../core/services/estandares.service';
+import { parseCurp, MEXICAN_STATES } from '../../core/utils/curp.util';
 
+/**
+ * Ficha de Registro del candidato para UN estándar de competencia en
+ * particular. El candidato puede llenar varias de estas fichas — una por
+ * cada certificación que quiera tramitar — eligiendo el estándar antes de
+ * abrir este formulario (ver MisFichasComponent + EstandarPickerComponent).
+ * Se guarda en `fichas_registro` vía FichaRegistroService.create().
+ */
 @Component({
   selector: 'app-ficha-registro-page',
   standalone: true,
@@ -16,21 +24,21 @@ import { ParticipantsService } from '../../core/services/participants.service';
   styleUrl: './ficha-registro-page.component.css',
 })
 export class FichaRegistroPageComponent implements OnInit, OnDestroy {
-  private readonly fb       = inject(FormBuilder);
-  private readonly auth     = inject(AuthService);
-  private readonly frmsSvc  = inject(EnrollmentFormsService);
-  private readonly partSvc  = inject(ParticipantsService);
+  private readonly fb   = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly fichaSvc = inject(FichaRegistroService);
+
+  /** Estándar de competencia para el que se está llenando esta ficha. */
+  estandar = input.required<Estandar>();
 
   /** Emite cuando el formulario fue guardado con éxito */
   saved = output<void>();
 
   // ─── State ───────────────────────────────────────────────────────────────
-  loading       = signal(false);
-  toast         = signal('');
-  toastType     = signal<'success' | 'error' | 'info'>('info');
-  submitted     = signal(false);
-  enrollmentId  = signal<string | null>(null);
-  loadingEnroll = signal(true);
+  loading   = signal(false);
+  toast     = signal('');
+  toastType = signal<'success' | 'error' | 'info'>('info');
+  submitted = signal(false);
 
   // ─── Canvas de firma ────────────────────────────────────────────────────
   @ViewChild('sigCanvas') sigCanvas!: ElementRef<HTMLCanvasElement>;
@@ -45,17 +53,32 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
     { value: 'No', label: 'No' },
   ];
 
+  // ─── Domicilio: estados + "Otro" con texto libre ──────────────────────────
+  readonly estadosList = MEXICAN_STATES;
+  entidadOtroSelected = signal(false);
+
+  // ─── Estudios: solo el nivel (no institución) ─────────────────────────────
+  readonly nivelesEstudio = [
+    'Primaria',
+    'Secundaria',
+    'Preparatoria / Bachillerato',
+    'Técnico Superior',
+    'Licenciatura',
+    'Maestría',
+    'Doctorado',
+  ];
+
   // ─── Formulario ─────────────────────────────────────────────────────────
   form!: FormGroup;
 
   // ─── Secciones colapsables ───────────────────────────────────────────────
   sections = signal({
-    estandar:      true,
     personales:    true,
     domicilio:     false,
     contacto:      false,
-    renap:         false,
     complementaria:false,
+    renap:         false,
+    terminos:      false,
     firma:         false,
   });
 
@@ -63,7 +86,46 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const user = this.auth.currentUser();
     this.buildForm(user?.full_name ?? '', user?.email ?? '', user?.phone ?? '');
-    this.loadFirstEnrollment();
+    this.watchCurpAutofill();
+  }
+
+  /**
+   * Al escribir una CURP válida, autocompleta fecha de nacimiento, estado de
+   * nacimiento (lugarNacimiento — de la ficha solo interesa el estado, no la
+   * ciudad) y género — pero solo si el candidato no los editó ya a mano
+   * (controles `pristine`), para no pisar una corrección manual.
+   */
+  private watchCurpAutofill() {
+    this.form.get('curp')?.valueChanges.subscribe((value: string) => {
+      const parsed = parseCurp(value ?? '');
+      if (!parsed) return;
+
+      const fechaCtrl = this.form.get('fechaNacimiento');
+      if (parsed.birthDate && fechaCtrl?.pristine) {
+        fechaCtrl.setValue(parsed.birthDate);
+      }
+
+      const lugarCtrl = this.form.get('lugarNacimiento');
+      if (parsed.birthStateName && lugarCtrl?.pristine) {
+        lugarCtrl.setValue(parsed.birthStateName);
+      }
+
+      const generoCtrl = this.form.get('genero');
+      if (parsed.sex && generoCtrl?.pristine) {
+        generoCtrl.setValue(parsed.sex === 'H' ? 'Hombre' : 'Mujer');
+      }
+    });
+  }
+
+  /** Maneja el select de Entidad Federativa del domicilio (con opción "Otro"). */
+  onEntidadSelectChange(value: string) {
+    if (value === 'Otro') {
+      this.entidadOtroSelected.set(true);
+      this.form.get('entidadFederativa')?.setValue('');
+    } else {
+      this.entidadOtroSelected.set(false);
+      this.form.get('entidadFederativa')?.setValue(value);
+    }
   }
 
   ngOnDestroy() {
@@ -72,28 +134,25 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
 
   private buildForm(name: string, email: string, phone: string) {
     this.form = this.fb.group({
-      // Estándar
-      estandarCompetencia: ['', Validators.required],
-      estandarCodigo:      ['', Validators.required],
-      fechaRegistro:       [new Date().toISOString().slice(0, 10), Validators.required],
       // Datos personales
-      nombreCompleto:  [name,  Validators.required],
+      nombreCompleto:  [name,  [Validators.required, Validators.minLength(3)]],
       lugarNacimiento: ['',    Validators.required],
       nacionalidad:    ['Mexicana', Validators.required],
-      curp:            ['',    Validators.required],
+      curp:            ['',    [Validators.required, Validators.minLength(18), Validators.maxLength(18),
+                                Validators.pattern(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/i)]],
       genero:          ['',    Validators.required],
       fechaNacimiento: ['',    Validators.required],
       // Domicilio
       calle:             ['', Validators.required],
       numero:            ['', Validators.required],
-      cp:                ['', Validators.required],
+      cp:                ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
       colonia:           ['', Validators.required],
       ciudad:            ['', Validators.required],
       entidadFederativa: ['', Validators.required],
       // Contacto
       email:           [email, [Validators.required, Validators.email]],
-      telefono:        [phone, Validators.required],
-      telefonoCelular: [''],
+      telefono:        [phone, [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      telefonoCelular: ['',    [Validators.pattern(/^\d{10}$/)]],
       // RENAP
       consentimientoRenap: ['', Validators.required],
       // Complementaria
@@ -114,35 +173,13 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
       observaciones:        [''],
       cuentaCertificacion:  ['', Validators.required],
       cualesCertificaciones:[''],
+      // Términos y condiciones
+      terminosAceptados: [false, Validators.requiredTrue],
     });
   }
 
-  private async loadFirstEnrollment() {
-    this.loadingEnroll.set(true);
-    const user = this.auth.currentUser();
-    if (!user?.email) { this.loadingEnroll.set(false); return; }
-
-    try {
-      const parts = await this.partSvc.getParticipants(user.email);
-      const me = parts.find(p => p.email === user.email || p.user_id === user.id) ?? parts[0];
-      if (me) {
-        const enrs = await this.partSvc.getEnrollments(undefined, me.id);
-        if (enrs.length > 0) {
-          this.enrollmentId.set(enrs[0].id);
-          // Pre-llenar código/nombre del estándar desde la inscripción
-          const e = enrs[0] as any;
-          const courseName = e.groups?.courses?.name ?? '';
-          const courseCode = e.groups?.courses?.code ?? '';
-          if (courseName) this.form.patchValue({ estandarCompetencia: courseName });
-          if (courseCode) this.form.patchValue({ estandarCodigo: courseCode });
-        }
-      }
-    } catch { /* silently ignore */ }
-    this.loadingEnroll.set(false);
-  }
-
   // ─── Secciones ─────────────────────────────────────────────────────────
-  toggleSection(key: 'estandar' | 'personales' | 'domicilio' | 'contacto' | 'renap' | 'complementaria' | 'firma') {
+  toggleSection(key: 'personales' | 'domicilio' | 'contacto' | 'renap' | 'complementaria' | 'terminos' | 'firma') {
     this.sections.update(s => ({ ...s, [key]: !s[key] }));
     // Inicializar canvas si se abre la sección de firma
     if (key === 'firma' && !this.sections()[key]) {
@@ -229,15 +266,15 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
     this.form.markAllAsTouched();
 
     if (this.form.invalid) {
-      this.showToast('⚠️ Completa todos los campos obligatorios antes de continuar.', 'error');
+      this.showToast('Completa todos los campos obligatorios antes de continuar.', 'error');
       // Abrir todas las secciones para que el usuario vea los errores
       this.sections.set({
-        estandar:      true,
         personales:    true,
         domicilio:     true,
         contacto:      true,
         renap:         true,
         complementaria:true,
+        terminos:      true,
         firma:         true,
       });
       return;
@@ -246,27 +283,21 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
     if (!this.firmaBase64()) {
       this.sections.update(s => ({ ...s, firma: true }));
       setTimeout(() => this.initCanvas(), 150);
-      this.showToast('⚠️ Dibuja tu firma antes de enviar.', 'error');
-      return;
-    }
-
-    const eid = this.enrollmentId();
-    if (!eid) {
-      this.showToast('⚠️ No tienes una inscripción activa. Solicita una inscripción primero.', 'error');
+      this.showToast('Dibuja tu firma antes de enviar.', 'error');
       return;
     }
 
     this.loading.set(true);
     const formData = { ...this.form.value, firma: this.firmaBase64() };
-    const result = await this.frmsSvc.upsert(eid, 'ficha_registro', formData);
+    const result = await this.fichaSvc.create(this.estandar().id, formData);
     this.loading.set(false);
 
-    if (result) {
+    if (result.ok) {
       this.submitted.set(true);
-      this.showToast('✅ ¡Ficha de Registro enviada exitosamente!', 'success');
+      this.showToast('¡Ficha de Registro enviada exitosamente!', 'success');
       setTimeout(() => this.saved.emit(), 2000);
     } else {
-      this.showToast('❌ Error al guardar. Verifica tu conexión e intenta de nuevo.', 'error');
+      this.showToast(result.error || 'Error al guardar. Verifica tu conexión e intenta de nuevo.', 'error');
     }
   }
 

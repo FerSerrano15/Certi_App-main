@@ -2,10 +2,11 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import {
-  CoursesService, Course, Program, Group, CourseSession, EligibleInstructor
+  CoursesService, Course, Program, Group, CourseSession, EligibleEvaluator
 } from '../../core/services/courses.service';
 import { ParticipantsService, Participant, Enrollment } from '../../core/services/participants.service';
 import { AuthService } from '../../core/services/auth.service';
+import { EstandaresService, Estandar, EvaluacionReactivo } from '../../core/services/estandares.service';
 
 type View = 'courses' | 'course-detail' | 'group-detail';
 
@@ -19,6 +20,7 @@ type View = 'courses' | 'course-detail' | 'group-detail';
 export class LmsComponent implements OnInit {
   private readonly svc = inject(CoursesService);
   private readonly partSvc = inject(ParticipantsService);
+  private readonly estandaresSvc = inject(EstandaresService);
   readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
 
@@ -27,23 +29,53 @@ export class LmsComponent implements OnInit {
   loading = signal(false);
   toast = signal('');
 
-  courses  = signal<Course[]>([]);
-  programs = signal<Program[]>([]);
-  groups   = signal<Group[]>([]);
-  sessions = signal<CourseSession[]>([]);
+  courses    = signal<Course[]>([]);
+  programs   = signal<Program[]>([]);
+  groups     = signal<Group[]>([]);
+  sessions   = signal<CourseSession[]>([]);
+  estandares = signal<Estandar[]>([]);
 
   selectedCourse = signal<Course | null>(null);
   selectedGroup  = signal<Group | null>(null);
 
-  // ─── Instructores / Participantes ───────────────────────────────────────
-  eligibleInstructors = signal<EligibleInstructor[]>([]);
-  loadingInstructors  = signal(false);
+  // ─── Evaluadores / Participantes ─────────────────────────────────────────
+  eligibleEvaluators = signal<EligibleEvaluator[]>([]);
+  loadingEvaluators  = signal(false);
 
   groupEnrollments    = signal<Enrollment[]>([]);
   eligibleParticipants = signal<Participant[]>([]);
   showAddParticipantModal = signal(false);
   selectedParticipantId   = signal('');
   loadingParticipants = signal(false);
+
+  // ─── Evaluación (aplicar Guía de Observación a un candidato) ───────────────
+  showEvalModal = signal(false);
+  evaluatingEnrollment = signal<Enrollment | null>(null);
+  evalRows = signal<EvaluacionReactivo[]>([]);
+  evalLoading = signal(false);
+  evalSaving = signal(false);
+  evalError = signal('');
+  evalResult = signal<{ final_grade: number; competency_result: string } | null>(null);
+
+  evalGrouped = computed(() => {
+    const groups = new Map<string, { titulo: string; orden: number; rows: EvaluacionReactivo[] }>();
+    for (const row of this.evalRows()) {
+      const guia = row.reactivos?.guias_observacion;
+      const key = guia?.id ?? 'sin-guia';
+      if (!groups.has(key)) groups.set(key, { titulo: guia?.titulo ?? 'Sin guía', orden: guia?.orden ?? 0, rows: [] });
+      groups.get(key)!.rows.push(row);
+    }
+    return Array.from(groups.values())
+      .sort((a, b) => a.orden - b.orden)
+      .map(g => ({ ...g, rows: g.rows.sort((a, b) => (a.reactivos?.orden ?? 0) - (b.reactivos?.orden ?? 0)) }));
+  });
+
+  evalPesoTotal = computed(() => this.evalRows().reduce((s, r) => s + (r.reactivos?.peso ?? 0), 0));
+  evalPesoObtenido = computed(() => this.evalRows().reduce((s, r) => s + (r.respuesta ? (r.reactivos?.peso ?? 0) : 0), 0));
+  evalPorcentaje = computed(() => {
+    const total = this.evalPesoTotal();
+    return total > 0 ? Math.round((this.evalPesoObtenido() / total) * 100) : 0;
+  });
 
   // ─── Modal state ─────────────────────────────────────────────────────────
   showCourseModal   = signal(false);
@@ -79,6 +111,7 @@ export class LmsComponent implements OnInit {
     code:            ['', [Validators.required, Validators.minLength(2)]],
     description:     [''],
     program_id:      [''],
+    estandar_id:     [''],
     duration_hours:  [0, [Validators.min(0)]],
     passing_grade:   [70, [Validators.min(0), Validators.max(100)]],
     min_attendance:  [80, [Validators.min(0), Validators.max(100)]],
@@ -93,7 +126,7 @@ export class LmsComponent implements OnInit {
   groupForm = this.fb.group({
     course_id:     ['', Validators.required],
     name:          ['', [Validators.required, Validators.minLength(3)]],
-    instructor_id: [''],
+    evaluator_id:  [''],
     start_date:    [''],
     end_date:      [''],
     capacity:      [null as number | null],
@@ -113,12 +146,14 @@ export class LmsComponent implements OnInit {
 
   async loadAll() {
     this.loading.set(true);
-    const [courses, programs] = await Promise.all([
+    const [courses, programs, estandares] = await Promise.all([
       this.svc.getCourses(),
       this.svc.getPrograms(),
+      this.estandaresSvc.list(),
     ]);
     this.courses.set(courses);
     this.programs.set(programs);
+    this.estandares.set(estandares);
     this.loading.set(false);
   }
 
@@ -164,6 +199,7 @@ export class LmsComponent implements OnInit {
       name: course.name, code: course.code,
       description: course.description ?? '',
       program_id: course.program_id ?? '',
+      estandar_id: course.estandar_id ?? '',
       duration_hours: course.duration_hours,
       passing_grade: course.passing_grade,
       min_attendance: course.min_attendance,
@@ -181,6 +217,7 @@ export class LmsComponent implements OnInit {
       code:            val.code ?? undefined,
       description:     val.description || undefined,
       program_id:      val.program_id || null,
+      estandar_id:     val.estandar_id || null,
       duration_hours:  val.duration_hours ?? 0,
       passing_grade:   val.passing_grade ?? 70,
       min_attendance:  val.min_attendance ?? 80,
@@ -265,9 +302,9 @@ export class LmsComponent implements OnInit {
   async openNewGroup() {
     this.editingGroup.set(null);
     const courseId = this.selectedCourse()?.id ?? '';
-    this.groupForm.reset({ status: 'PLANEADO', course_id: courseId, instructor_id: '' });
+    this.groupForm.reset({ status: 'PLANEADO', course_id: courseId, evaluator_id: '' });
     this.showGroupModal.set(true);
-    await this.loadEligibleInstructors(courseId);
+    await this.loadEligibleEvaluators(courseId);
   }
 
   async openEditGroup(group: Group, e: Event) {
@@ -276,22 +313,22 @@ export class LmsComponent implements OnInit {
     this.groupForm.patchValue({
       course_id:     group.course_id,
       name:          group.name,
-      instructor_id: group.instructor_id ?? '',
+      evaluator_id:  group.evaluator_id ?? '',
       start_date:    group.start_date ?? '',
       end_date:      group.end_date ?? '',
       capacity:      group.capacity,
       status:        group.status,
     });
     this.showGroupModal.set(true);
-    await this.loadEligibleInstructors(group.course_id);
+    await this.loadEligibleEvaluators(group.course_id);
   }
 
-  async loadEligibleInstructors(courseId: string) {
-    if (!courseId) { this.eligibleInstructors.set([]); return; }
-    this.loadingInstructors.set(true);
-    const instructors = await this.svc.getEligibleInstructors(courseId);
-    this.eligibleInstructors.set(instructors);
-    this.loadingInstructors.set(false);
+  async loadEligibleEvaluators(courseId: string) {
+    if (!courseId) { this.eligibleEvaluators.set([]); return; }
+    this.loadingEvaluators.set(true);
+    const evaluators = await this.svc.getEligibleEvaluators(courseId);
+    this.eligibleEvaluators.set(evaluators);
+    this.loadingEvaluators.set(false);
   }
 
   async saveGroup() {
@@ -301,7 +338,7 @@ export class LmsComponent implements OnInit {
     const payload: Partial<Group> = {
       course_id:     val.course_id ?? undefined,
       name:          val.name ?? undefined,
-      instructor_id: val.instructor_id || null,
+      evaluator_id:  val.evaluator_id || null,
       start_date:    val.start_date || null,
       end_date:      val.end_date || null,
       capacity:      val.capacity || null,
@@ -319,7 +356,7 @@ export class LmsComponent implements OnInit {
       const current = this.selectedGroup();
       if (current && current.id === result.id) this.selectedGroup.set(result);
     } else {
-      this.showToast('No se pudo guardar el grupo. Si asignaste un instructor, verifica que cuente con la credencial de instructor y la certificación de este curso.');
+      this.showToast('No se pudo guardar el grupo. Si asignaste un evaluador, verifica que cuente con la credencial de evaluador y la certificación de este curso.');
     }
     this.loading.set(false);
   }
@@ -372,6 +409,61 @@ export class LmsComponent implements OnInit {
       this.showToast('Participante removido del grupo.');
       const group = this.selectedGroup();
       if (group) this.groupEnrollments.set(await this.partSvc.getEnrollments(group.id));
+    }
+  }
+
+  // ─── Evaluación (aplicar Guía de Observación a un candidato) ───────────────
+  async openEvaluacion(enrollment: Enrollment) {
+    this.evaluatingEnrollment.set(enrollment);
+    this.evalRows.set([]);
+    this.evalResult.set(null);
+    this.evalError.set('');
+    this.showEvalModal.set(true);
+    this.evalLoading.set(true);
+
+    await this.estandaresSvc.initEvaluacion(enrollment.id);
+    const rows = await this.estandaresSvc.getEvaluacion(enrollment.id);
+    this.evalRows.set(rows);
+    if (rows.length === 0) {
+      this.evalError.set('No se encontraron reactivos. Verifica que el curso de este grupo tenga un estándar de competencia vinculado (desde "Editar curso") y que ese estándar tenga guías y reactivos cargados.');
+    }
+    this.evalLoading.set(false);
+  }
+
+  closeEvalModal() {
+    this.showEvalModal.set(false);
+    this.evaluatingEnrollment.set(null);
+    this.evalRows.set([]);
+    this.evalResult.set(null);
+  }
+
+  setRespuesta(rowId: string, value: boolean) {
+    this.evalRows.update(rows => rows.map(r => r.id === rowId ? { ...r, respuesta: value } : r));
+  }
+
+  setObservacion(rowId: string, value: string) {
+    this.evalRows.update(rows => rows.map(r => r.id === rowId ? { ...r, observaciones: value } : r));
+  }
+
+  async guardarEvaluacion() {
+    const enrollment = this.evaluatingEnrollment();
+    if (!enrollment) return;
+    this.evalSaving.set(true);
+    const records = this.evalRows().map(r => ({
+      reactivo_id: r.reactivo_id,
+      respuesta: r.respuesta,
+      observaciones: r.observaciones ?? undefined,
+    }));
+    await this.estandaresSvc.bulkSaveEvaluacion(enrollment.id, records);
+    const result = await this.estandaresSvc.recalculateEvaluacion(enrollment.id);
+    this.evalSaving.set(false);
+    if (result) {
+      this.evalResult.set(result);
+      this.showToast('Evaluación guardada y calificación calculada.');
+      const group = this.selectedGroup();
+      if (group) this.groupEnrollments.set(await this.partSvc.getEnrollments(group.id));
+    } else {
+      this.showToast('Se guardaron las respuestas, pero no se pudo calcular la calificación final.');
     }
   }
 

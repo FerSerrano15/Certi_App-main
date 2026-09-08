@@ -8,8 +8,11 @@ import { FichaRegistroData } from '../../core/interfaces/pdf-data.interface';
 
 // ── Helpers ──────────────────────────────────────────────────
 
-const ch = (val: boolean): string => val ? '☑' : '☐';
-const radio = (current: string, target: string): string => current === target ? '●' : '○';
+// Nota: se evitan glíficos Unicode (☑☐●○) porque la fuente Roboto embebida
+// en pdfmake no los incluye — al faltar el glifo, pdfmake calcula mal el
+// ancho del carácter y la fila se estira a decenas de líneas fantasma.
+const ch = (val: boolean): string => val ? 'X' : '';
+const radio = (current: string, target: string): string => current === target ? '(X)' : '(  )';
 const val = (v: string | undefined | null): string => v || '';
 const GRAY = '#CCCCCC';
 const DARK_GRAY = '#808080';
@@ -200,7 +203,7 @@ export function fichaRegistroTemplate(data: Partial<FichaRegistroData>): any {
                     ],
                     [
                       { text: 'CURP:', style: 'fieldLabel', alignment: 'right' },
-                      { text: val(d.curp), style: 'fieldValue' }
+                      { text: val(d.curp).toUpperCase(), style: 'fieldValue' }
                     ]
                   ]
                 },
@@ -364,7 +367,7 @@ export function fichaRegistroTemplate(data: Partial<FichaRegistroData>): any {
       // Tabla de información confidencial
       {
         table: {
-          widths: [90, 12, 30, 12, '*', 12, 30, 12, '*', 50, '*'],
+          widths: [90, 12, 30, 12, 30, 95, 12, 30, 12, 30, 45, '*'],
           body: [
             // Fila 1: Sabe leer / Cuenta estudios
             [
@@ -395,7 +398,7 @@ export function fichaRegistroTemplate(data: Partial<FichaRegistroData>): any {
       // Tabla discapacidad
       {
         table: {
-          widths: [110, 12, 30, 12, '*'],
+          widths: [110, 12, 30, 12, 30],
           body: [
             [
               { text: '¿Tiene algún tipo de\nDiscapacidad?', style: 'fieldLabel', alignment: 'center' },
