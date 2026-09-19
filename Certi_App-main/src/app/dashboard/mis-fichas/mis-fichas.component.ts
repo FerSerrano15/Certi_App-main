@@ -9,6 +9,60 @@ import { FichaRegistroPageComponent } from '../ficha-registro-page/ficha-registr
 
 type TabView = 'estandares' | 'mis-fichas';
 
+export interface CategoryMeta {
+  icon: 'book' | 'heart' | 'sparkles' | 'layers' | 'cpu' | 'star';
+  colorClass: string;
+  description: string;
+}
+
+export interface CategoryGroup {
+  name: string;
+  meta: CategoryMeta;
+  count: number;
+  estandares: Estandar[];
+}
+
+const CATEGORY_META_MAP: Record<string, CategoryMeta> = {
+  'Educación': {
+    icon: 'book',
+    colorClass: 'cat-theme-indigo',
+    description: 'Estándares de formación del capital humano, docencia, tutoría y diseño de cursos presenciales y en línea.',
+  },
+  'Derechos humanos y salud': {
+    icon: 'heart',
+    colorClass: 'cat-theme-rose',
+    description: 'Servicios de atención médica, primeros auxilios, asistencia social, igualdad y protección integral de derechos.',
+  },
+  'Belleza': {
+    icon: 'sparkles',
+    colorClass: 'cat-theme-pink',
+    description: 'Servicios cosmetológicos faciales, cuidado y coloración capilar, aplicación de uñas y estética profesional.',
+  },
+  'Otros servicios': {
+    icon: 'layers',
+    colorClass: 'cat-theme-amber',
+    description: 'Competencias técnicas y operativas: atención al cliente, idiomas, instalaciones especializadas y evaluación.',
+  },
+  'Tecnología': {
+    icon: 'cpu',
+    colorClass: 'cat-theme-teal',
+    description: 'Tecnologías de la información, plataformas digitales y herramientas síncronas de aprendizaje.',
+  },
+};
+
+function resolveCategoryMeta(catName: string): CategoryMeta {
+  const match = Object.keys(CATEGORY_META_MAP).find(
+    k => k.toLowerCase() === catName.toLowerCase() || catName.toLowerCase().includes(k.toLowerCase())
+  );
+  if (match) return CATEGORY_META_MAP[match];
+
+  return {
+    icon: 'star',
+    colorClass: 'cat-theme-slate',
+    description: 'Estándares de competencia laboral certificados ante el Sistema Nacional de Competencias (CONOCER).',
+  };
+}
+
 @Component({
   selector: 'app-mis-fichas',
   standalone: true,
@@ -35,17 +89,69 @@ export class MisFichasComponent implements OnInit {
   chosenEstandar = signal<Estandar | null>(null);
   downloadingId = signal<string | null>(null);
   searchQuery = signal<string>('');
+  selectedCategory = signal<string>('TODAS');
 
-  // Filtrado reactivo de estándares de competencia
-  filteredEstandares = computed(() => {
+  // Categorías presentes en los estándares cargados con sus conteos
+  categories = computed(() => {
+    const counts = new Map<string, number>();
+    for (const e of this.estandares()) {
+      const cat = e.categoria?.trim() || 'Otros servicios';
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+        meta: resolveCategoryMeta(name),
+      }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  // Estándares agrupados en secciones por categoría con filtros reactivos
+  groupedEstandares = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
-    const list = this.estandares();
-    if (!q) return list;
-    return list.filter(e =>
-      e.codigo.toLowerCase().includes(q) ||
-      e.nombre.toLowerCase().includes(q) ||
-      (e.categoria && e.categoria.toLowerCase().includes(q))
-    );
+    const catFilter = this.selectedCategory();
+    const all = this.estandares();
+
+    // 1. Filtro de búsqueda por texto (código, nombre o categoría)
+    const filtered = all.filter(e => {
+      if (!q) return true;
+      return (
+        e.codigo.toLowerCase().includes(q) ||
+        e.nombre.toLowerCase().includes(q) ||
+        (e.categoria && e.categoria.toLowerCase().includes(q))
+      );
+    });
+
+    // 2. Agrupar por categoría
+    const groupsMap = new Map<string, Estandar[]>();
+    for (const e of filtered) {
+      const cat = e.categoria?.trim() || 'Otros servicios';
+      if (!groupsMap.has(cat)) {
+        groupsMap.set(cat, []);
+      }
+      groupsMap.get(cat)!.push(e);
+    }
+
+    // 3. Crear lista de secciones aplicando el filtro de categoría activa
+    const groups: CategoryGroup[] = [];
+    for (const [catName, items] of groupsMap.entries()) {
+      if (catFilter !== 'TODAS' && catName !== catFilter) {
+        continue;
+      }
+      groups.push({
+        name: catName,
+        meta: resolveCategoryMeta(catName),
+        count: items.length,
+        estandares: items,
+      });
+    }
+
+    return groups.sort((a, b) => b.count - a.count);
+  });
+
+  totalFilteredCount = computed(() => {
+    return this.groupedEstandares().reduce((acc, g) => acc + g.estandares.length, 0);
   });
 
   // Mapa rápido de fichas del usuario por estandar_id
@@ -56,6 +162,15 @@ export class MisFichasComponent implements OnInit {
     }
     return map;
   });
+
+  selectCategory(cat: string) {
+    this.selectedCategory.set(cat);
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.selectedCategory.set('TODAS');
+  }
 
   async ngOnInit() {
     await this.loadData();

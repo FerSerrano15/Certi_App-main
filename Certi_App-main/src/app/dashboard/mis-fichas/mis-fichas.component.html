@@ -35,24 +35,82 @@
       </div>
     </div>
 
-    <!-- ── PESTAÑA 1: CATÁLOGO DE CARTAS DE ESTÁNDARES ── -->
+    <!-- ── PESTAÑA 1: CATÁLOGO DE CARTAS DE ESTÁNDARES ORGANIZADAS POR CATEGORÍA ── -->
     @if (activeTab() === 'estandares') {
       <div class="mf-toolbar">
-        <div class="mf-search-box">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            class="mf-search-input"
-            placeholder="Buscar por código (ej. EC0076) o nombre del estándar..."
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
-          @if (searchQuery()) {
-            <button class="mf-clear-search" (click)="searchQuery.set('')" title="Limpiar búsqueda">✕</button>
+        <div class="mf-search-row">
+          <div class="mf-search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              class="mf-search-input"
+              placeholder="Buscar por código (ej. EC0217, EC0076) o nombre del estándar..."
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+            />
+            @if (searchQuery()) {
+              <button class="mf-clear-search" (click)="searchQuery.set('')" title="Limpiar búsqueda">✕</button>
+            }
+          </div>
+
+          <!-- Resumen de conteo y botón de reseteo si hay filtro -->
+          @if (searchQuery() || selectedCategory() !== 'TODAS') {
+            <div class="mf-filter-active-summary">
+              <span class="mf-filter-count-badge">
+                Mostrando <strong>{{ totalFilteredCount() }}</strong> de {{ estandares().length }} estándares
+              </span>
+              <button type="button" class="mf-reset-filters-btn" (click)="resetFilters()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Limpiar filtros
+              </button>
+            </div>
           }
         </div>
+
+        <!-- Chips de navegación y filtro por categoría -->
+        @if (!loading() && categories().length > 0) {
+          <div class="mf-categories-pills-bar">
+            <span class="mf-categories-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Categorías:
+            </span>
+            <div class="mf-pills-scroll">
+              <button
+                type="button"
+                class="mf-cat-pill"
+                [class.active]="selectedCategory() === 'TODAS'"
+                (click)="selectCategory('TODAS')"
+              >
+                <span>Todas</span>
+                <span class="mf-pill-counter">{{ estandares().length }}</span>
+              </button>
+              @for (cat of categories(); track cat.name) {
+                <button
+                  type="button"
+                  class="mf-cat-pill"
+                  [class.active]="selectedCategory() === cat.name"
+                  [class]="cat.meta.colorClass"
+                  (click)="selectCategory(cat.name)"
+                >
+                  <span class="mf-pill-icon">
+                    @switch (cat.meta.icon) {
+                      @case ('book') { 📚 }
+                      @case ('heart') { 🩺 }
+                      @case ('sparkles') { ✨ }
+                      @case ('layers') { ⚙️ }
+                      @case ('cpu') { 💻 }
+                      @default { 🏷️ }
+                    }
+                  </span>
+                  <span>{{ cat.name }}</span>
+                  <span class="mf-pill-counter">{{ cat.count }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
       </div>
 
       @if (loading()) {
@@ -60,69 +118,129 @@
           <div class="mf-spinner"></div>
           <span>Cargando estándares de competencia...</span>
         </div>
-      } @else if (filteredEstandares().length === 0) {
+      } @else if (groupedEstandares().length === 0) {
         <div class="mf-empty">
           <div class="mf-empty-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
           <h3>No se encontraron estándares</h3>
-          <p>No hay estándares registrados que coincidan con "{{ searchQuery() }}".</p>
-          @if (searchQuery()) {
-            <button class="mf-action-btn" (click)="searchQuery.set('')">Ver todos los estándares</button>
-          }
+          <p>
+            @if (searchQuery()) {
+              No hay estándares que coincidan con "{{ searchQuery() }}" en la categoría seleccionada.
+            } @else {
+              No hay estándares disponibles en esta categoría.
+            }
+          </p>
+          <button class="mf-action-btn" (click)="resetFilters()">Ver todos los estándares</button>
         </div>
       } @else {
-        <!-- Grid de Cartas de Estándares de Competencia -->
-        <div class="ec-grid">
-          @for (e of filteredEstandares(); track e.id) {
-            <article class="ec-card" (click)="onSelectEstandar(e)" tabindex="0" (keydown.enter)="onSelectEstandar(e)">
-              <div class="ec-card-top">
-                <div class="ec-badge-code">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  <span>{{ e.codigo }}</span>
-                </div>
-                @if (e.categoria) {
-                  <span class="ec-badge-cat">{{ e.categoria }}</span>
-                }
-              </div>
-
-              <h3 class="ec-card-title">{{ e.nombre }}</h3>
-
-              <!-- Estado de registro del candidato para este estándar -->
-              <div class="ec-card-status">
-                @if (fichasByEstandarId().get(e.id); as ficha) {
-                  <div class="ec-ficha-indicator" [class]="'status-' + ficha.status">
-                    <span class="status-dot"></span>
-                    <span class="status-text">
-                      Ficha {{ ficha.status === 'pendiente' ? 'en revisión' : ficha.status === 'aprobada' ? 'aprobada' : 'observada' }}
-                    </span>
+        <!-- ── SECCIONES POR CATEGORÍA ── -->
+        <div class="mf-sections-container">
+          @for (group of groupedEstandares(); track group.name) {
+            <section class="mf-category-section" [class]="group.meta.colorClass">
+              <!-- Encabezado de la Sección de Categoría -->
+              <div class="mf-cat-section-header">
+                <div class="mf-cat-header-left">
+                  <div class="mf-cat-icon-badge">
+                    @switch (group.meta.icon) {
+                      @case ('book') {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                      }
+                      @case ('heart') {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      }
+                      @case ('sparkles') {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>
+                      }
+                      @case ('layers') {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                      }
+                      @case ('cpu') {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                      }
+                      @default {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      }
+                    }
                   </div>
-                  <button
-                    type="button"
-                    class="ec-btn-pdf"
-                    (click)="verPdf(ficha, $event)"
-                    [disabled]="downloadingId() === ficha.id"
-                    title="Descargar PDF de mi ficha"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                    {{ downloadingId() === ficha.id ? 'Cargando…' : 'PDF' }}
-                  </button>
-                } @else {
-                  <span class="ec-ready-hint">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    Disponible para registro
-                  </span>
-                }
+                  <div class="mf-cat-header-text">
+                    <div class="mf-cat-title-line">
+                      <h3 class="mf-cat-section-title">{{ group.name }}</h3>
+                      <span class="mf-cat-count-badge">
+                        {{ group.count }} {{ group.count === 1 ? 'estándar' : 'estándares' }}
+                      </span>
+                    </div>
+                    <p class="mf-cat-section-desc">{{ group.meta.description }}</p>
+                  </div>
+                </div>
               </div>
 
-              <!-- Botón / footer de la carta -->
-              <div class="ec-card-action">
-                <span class="ec-action-text">
-                  {{ fichasByEstandarId().has(e.id) ? 'Llenar nueva ficha' : 'Llenar Ficha de Registro' }}
-                </span>
-                <span class="ec-action-icon">→</span>
+              <!-- Grid de Cartas de Estándares de esta Categoría -->
+              <div class="ec-grid">
+                @for (e of group.estandares; track e.id) {
+                  <article class="ec-card" (click)="onSelectEstandar(e)" tabindex="0" (keydown.enter)="onSelectEstandar(e)">
+                    <!-- Borde/Acento superior interactivo -->
+                    <div class="ec-card-accent-bar"></div>
+
+                    <div class="ec-card-top">
+                      <div class="ec-badge-code">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span>{{ e.codigo }}</span>
+                      </div>
+                      <div class="ec-card-top-right">
+                        @if (fichasByEstandarId().has(e.id)) {
+                          <span class="ec-registered-badge">
+                            <span class="ec-status-live-dot"></span>
+                            Registrado
+                          </span>
+                        } @else {
+                          <span class="ec-badge-conocer">Oficial CONOCER</span>
+                        }
+                      </div>
+                    </div>
+
+                    <h3 class="ec-card-title">{{ e.nombre }}</h3>
+
+                    <!-- Estado de registro del candidato para este estándar -->
+                    <div class="ec-card-status">
+                      @if (fichasByEstandarId().get(e.id); as ficha) {
+                        <div class="ec-ficha-indicator" [class]="'status-' + ficha.status">
+                          <span class="status-dot"></span>
+                          <span class="status-text">
+                            Ficha {{ ficha.status === 'enviada' ? 'en revisión' : ficha.status === 'validada' ? 'validada' : ficha.status === 'rechazada' ? 'rechazada' : 'borrador' }}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          class="ec-btn-pdf"
+                          (click)="verPdf(ficha, $event)"
+                          [disabled]="downloadingId() === ficha.id"
+                          title="Descargar PDF de mi ficha"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                          {{ downloadingId() === ficha.id ? 'Cargando…' : 'PDF' }}
+                        </button>
+                      } @else {
+                        <span class="ec-ready-hint">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          Disponible para registro
+                        </span>
+                      }
+                    </div>
+
+                    <!-- Botón / footer de la carta -->
+                    <div class="ec-card-action">
+                      <span class="ec-action-text">
+                        {{ fichasByEstandarId().has(e.id) ? 'Llenar nueva ficha' : 'Llenar Ficha de Registro' }}
+                      </span>
+                      <span class="ec-action-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                      </span>
+                    </div>
+                  </article>
+                }
               </div>
-            </article>
+            </section>
           }
         </div>
       }
@@ -159,7 +277,7 @@
               <div class="mf-row-right">
                 <span class="mf-status-pill" [class]="'mf-status-' + f.status">
                   <span class="status-dot"></span>
-                  {{ f.status === 'pendiente' ? 'En Revisión' : f.status === 'aprobada' ? 'Aprobada' : 'Observada' }}
+                  {{ f.status === 'enviada' ? 'En Revisión' : f.status === 'validada' ? 'Validada' : f.status === 'rechazada' ? 'Rechazada' : 'Borrador' }}
                 </span>
                 <button
                   type="button"
