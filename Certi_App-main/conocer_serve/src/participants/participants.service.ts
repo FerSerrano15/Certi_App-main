@@ -149,24 +149,33 @@ export class ParticipantsService {
   // ════════════════════════════════════════════════════════════════════════════
 
   async resolveOrCreateSelfParticipant(user: JwtUser) {
+    return this.resolveOrCreateParticipantForUser(user.id);
+  }
+
+  /**
+   * Igual que resolveOrCreateSelfParticipant(), pero para un userId
+   * arbitrario — usado cuando el ADMIN actúa en nombre del candidato dueño
+   * de una ficha de registro (flujo "Formar Grupo"), no sobre sí mismo.
+   */
+  async resolveOrCreateParticipantForUser(userId: string) {
     const { data: profile, error: profileErr } = await this.supabase.admin
       .from('users')
       .select('email, full_name, phone')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single<{ email: string; full_name: string; phone: string | null }>();
     if (profileErr || !profile) throw new NotFoundException('Usuario no encontrado.');
 
     const { data: existing } = await this.supabase.admin
       .from('participants')
       .select('*')
-      .or(`user_id.eq.${user.id},email.eq.${profile.email}`)
+      .or(`user_id.eq.${userId},email.eq.${profile.email}`)
       .maybeSingle();
 
     if (existing) {
       if (!existing.user_id) {
         // El admin ya había prerregistrado a este candidato; lo vinculamos a su cuenta.
-        await this.supabase.admin.from('participants').update({ user_id: user.id }).eq('id', existing.id);
-        existing.user_id = user.id;
+        await this.supabase.admin.from('participants').update({ user_id: userId }).eq('id', existing.id);
+        existing.user_id = userId;
       }
       return existing;
     }
@@ -174,7 +183,7 @@ export class ParticipantsService {
     const { data: newParticipant, error: createErr } = await this.supabase.admin
       .from('participants')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         full_name: profile.full_name,
         email: profile.email,
         phone: profile.phone,
@@ -182,7 +191,7 @@ export class ParticipantsService {
       .select('*')
       .single();
     if (createErr || !newParticipant) {
-      throw new ConflictException('No se pudo crear tu registro de candidato: ' + createErr?.message);
+      throw new ConflictException('No se pudo crear el registro de candidato: ' + createErr?.message);
     }
     return newParticipant;
   }

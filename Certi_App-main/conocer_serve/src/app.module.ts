@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
 import { CertificationProcessModule } from './certification-process/certification-process.module';
 import { EvidencesModule } from './evidences/evidences.module';
+import { DiagnosticQuestionsModule } from './diagnostic-questions/diagnostic-questions.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { EvidencesModule } from './evidences/evidences.module';
     SolicitudesModule,
     CertificationProcessModule,
     EvidencesModule,
+    DiagnosticQuestionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

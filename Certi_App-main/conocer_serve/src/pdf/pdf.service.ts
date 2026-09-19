@@ -7,6 +7,7 @@
 import { Injectable } from '@nestjs/common';
 import * as path from 'path';
 import { fichaRegistroTemplate } from './ficha-registro.template';
+import { diagnosticoTemplate } from './diagnostico.template';
 
 // Ruta a las fuentes Roboto incluidas en pdfmake
 const pdfmakePath = path.dirname(require.resolve('pdfmake/package.json'));
@@ -39,6 +40,26 @@ export class PdfService {
     return new Promise((resolve, reject) => {
       try {
         const docDefinition = fichaRegistroTemplate(data);
+        const result = pm.createPdf(docDefinition);
+
+        result.pdfDocumentPromise.then((pdfDoc: any) => {
+          const chunks: Buffer[] = [];
+          pdfDoc.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+          pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+          pdfDoc.on('error', (err: Error) => reject(err));
+          pdfDoc.end();
+        }).catch((err: Error) => reject(err));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  /** Genera el PDF de la Evaluación Diagnóstica de un proceso como Buffer. */
+  generateDiagnosticoPdf(data: Record<string, any>): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      try {
+        const docDefinition = diagnosticoTemplate(data);
         const result = pm.createPdf(docDefinition);
 
         result.pdfDocumentPromise.then((pdfDoc: any) => {

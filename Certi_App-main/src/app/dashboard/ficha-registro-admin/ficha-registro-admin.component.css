@@ -1,7 +1,14 @@
 .fa-wrap {
   font-family: 'Inter', sans-serif;
 }
-.fa-header { margin-bottom: 1.25rem; }
+.fa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
 .fa-title {
   font-size: 1.35rem;
   font-weight: 800;

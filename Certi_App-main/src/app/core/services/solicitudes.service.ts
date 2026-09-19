@@ -46,6 +46,17 @@ export interface AuditEntry {
 
 export type SolicitudReviewAction = 'approve' | 'reject' | 'request_correction';
 
+/** Fila elegible para "Formar Grupo" — ficha de registro validada sin solicitud activa aún. */
+export interface FichaDisponible {
+  id: string;
+  user_id: string;
+  estandar_id: string;
+  estandar_codigo: string;
+  estandar_nombre: string;
+  submitted_at: string;
+  users: { full_name: string; email: string } | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SolicitudesService {
   private readonly api = inject(ApiService);
@@ -97,6 +108,12 @@ export class SolicitudesService {
       const data = await firstValueFrom(this.api.patch<Solicitud>(`/solicitudes/${id}/prepare`, { course_id: courseId, group_id: groupId }, this.token()));
       return { ok: true, data };
     } catch (err: unknown) { return { ok: false, data: null, error: this.extractError(err) }; }
+  }
+
+  /** Fichas de registro validadas de un estándar que aún no tienen solicitud activa — para "Formar Grupo". */
+  async getFichasDisponibles(estandarId: string): Promise<FichaDisponible[]> {
+    try { return await firstValueFrom(this.api.get<FichaDisponible[]>(`/solicitudes/fichas-disponibles?estandar_id=${estandarId}`, this.token())); }
+    catch { return []; }
   }
 
   private extractError(err: unknown): string {

@@ -1,0 +1,15 @@
+<div class="sp-wrap">
+  <div class="sp-hint">{{ label() }} — dibuja con el mouse o el dedo</div>
+  <div class="sp-canvas-wrap">
+    <canvas #sigCanvas class="sp-canvas" (mousedown)="initCanvas()" (touchstart)="initCanvas()"></canvas>
+  </div>
+  <div class="sp-actions">
+    @if (signatureData()) {
+      <span class="sp-ok">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        Firma capturada
+      </span>
+    }
+    <button type="button" class="sp-clear" (click)="clear()">Limpiar</button>
+  </div>
+</div>

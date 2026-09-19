@@ -2,9 +2,11 @@ import { Component, inject, signal, computed, OnInit, output } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { FichaRegistroService, FichaRegistro } from '../../core/services/ficha-registro.service';
+import { FichaRegistroService, FichaRegistro, FichaRegistroStatus } from '../../core/services/ficha-registro.service';
 import { PdfService } from '../../core/services/pdf.service';
+import { PdfPreviewDialogService } from '../../shared/pdf-preview-dialog/pdf-preview-dialog.service';
 import { EstandaresService, Estandar } from '../../core/services/estandares.service';
+import { EstandarPickerComponent } from '../../shared/estandar-picker/estandar-picker.component';
 import { FichaRegistroPageComponent } from '../ficha-registro-page/ficha-registro-page.component';
 
 type TabView = 'estandares' | 'mis-fichas';
@@ -75,6 +77,7 @@ export class MisFichasComponent implements OnInit {
   private readonly fichaSvc = inject(FichaRegistroService);
   private readonly estandaresSvc = inject(EstandaresService);
   private readonly pdfSvc = inject(PdfService);
+  private readonly pdfPreview = inject(PdfPreviewDialogService);
 
   /** Emite cuando se guarda una ficha nueva exitosamente */
   fichaGuardada = output<void>();
@@ -163,15 +166,6 @@ export class MisFichasComponent implements OnInit {
     return map;
   });
 
-  selectCategory(cat: string) {
-    this.selectedCategory.set(cat);
-  }
-
-  resetFilters() {
-    this.searchQuery.set('');
-    this.selectedCategory.set('TODAS');
-  }
-
   async ngOnInit() {
     await this.loadData();
   }
@@ -214,12 +208,39 @@ export class MisFichasComponent implements OnInit {
     this.downloadingId.set(f.id);
     try {
       const url = await this.pdfSvc.getFichaRegistroBlobUrlByFichaId(f.id, token);
-      window.open(url, '_blank');
+      this.pdfPreview.open({
+        title: `Ficha de Registro — ${f.estandar_codigo}`,
+        blobUrl: url,
+        fileName: `ficha-registro_${f.estandar_codigo.replace(/\s+/g, '-').toLowerCase()}`,
+      });
     } catch {
       // reintento disponible
     } finally {
       this.downloadingId.set(null);
     }
+  }
+
+  selectCategory(cat: string) {
+    this.selectedCategory.set(cat);
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.selectedCategory.set('TODAS');
+  }
+
+  fichaStatusLabel(status: FichaRegistroStatus | string): string {
+    if (status === 'pendiente' || status === 'enviada') return 'Ficha en revisión';
+    if (status === 'aprobada' || status === 'validada') return 'Ficha validada';
+    if (status === 'rechazada') return 'Ficha observada';
+    return 'Ficha en borrador';
+  }
+
+  fichaPillLabel(status: FichaRegistroStatus | string): string {
+    if (status === 'pendiente' || status === 'enviada') return 'En Revisión';
+    if (status === 'aprobada' || status === 'validada') return 'Validada';
+    if (status === 'rechazada') return 'Observada';
+    return 'Borrador';
   }
 }
 

@@ -7,6 +7,8 @@ import { StagesService } from './stages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AcceptRightsDto } from './dto/accept-rights.dto';
 import { SaveDiagnosticDto } from './dto/save-diagnostic.dto';
+import { StartDiagnosticDto } from './dto/start-diagnostic.dto';
+import { SubmitDiagnosticAnswersDto } from './dto/submit-diagnostic-answers.dto';
 import { SignCommitmentDto } from './dto/sign-commitment.dto';
 import { SavePlanDto } from './dto/save-plan.dto';
 import { ReviewPlanDto } from './dto/review-plan.dto';
@@ -16,6 +18,7 @@ import { CloseCedulaDto } from './dto/close-cedula.dto';
 import { EmitJudgmentDto } from './dto/emit-judgment.dto';
 import { PresentResultsDto } from './dto/present-results.dto';
 import { SubmitSurveyDto } from './dto/submit-survey.dto';
+import { StageCandidateAccessDto } from './dto/stage-candidate-access.dto';
 
 interface Req extends Request {
   user: { id: string; role: string; email: string };
@@ -25,6 +28,17 @@ interface Req extends Request {
 @UseGuards(JwtAuthGuard)
 export class StagesController {
   constructor(private readonly svc: StagesService) {}
+
+  // ── Visibilidad de la etapa para el candidato (evaluador/admin) ──
+  @Post('stages/:code/candidate-access')
+  setStageCandidateAccess(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('code') code: string,
+    @Body() dto: StageCandidateAccessDto,
+    @Request() req: Req,
+  ) {
+    return this.svc.setStageCandidateAccess(id, code, dto.enabled, req.user);
+  }
 
   // ── 1) Derechos y obligaciones ──
   @Get('rights')
@@ -44,6 +58,18 @@ export class StagesController {
   @Post('diagnostic')
   saveDiagnostic(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveDiagnosticDto, @Request() req: Req) {
     return this.svc.saveDiagnostic(id, dto, req.user);
+  }
+  @Post('diagnostic/start')
+  startDiagnostic(@Param('id', ParseUUIDPipe) id: string, @Body() dto: StartDiagnosticDto, @Request() req: Req) {
+    return this.svc.startDiagnostic(id, dto, req.user);
+  }
+  @Get('diagnostic/questions')
+  getDiagnosticQuestions(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
+    return this.svc.getDiagnosticQuestions(id, req.user);
+  }
+  @Post('diagnostic/answers')
+  submitDiagnosticAnswers(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SubmitDiagnosticAnswersDto, @Request() req: Req) {
+    return this.svc.submitDiagnosticAnswers(id, dto, req.user);
   }
 
   // ── 3) Carta compromiso ──

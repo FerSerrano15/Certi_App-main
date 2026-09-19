@@ -9,6 +9,8 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CertificationProcessService, JwtUser } from './certification-process.service';
 import { AcceptRightsDto } from './dto/accept-rights.dto';
 import { SaveDiagnosticDto } from './dto/save-diagnostic.dto';
+import { StartDiagnosticDto } from './dto/start-diagnostic.dto';
+import { SubmitDiagnosticAnswersDto } from './dto/submit-diagnostic-answers.dto';
 import { SignCommitmentDto } from './dto/sign-commitment.dto';
 import { SavePlanDto } from './dto/save-plan.dto';
 import { ReviewPlanDto } from './dto/review-plan.dto';
@@ -66,7 +68,10 @@ export class StagesService {
       update.completed_by = user.id;
     }
     if (notes !== undefined) update.notes = notes;
-    if (metadata !== undefined) update.metadata = metadata;
+    // Fusiona en vez de reemplazar — así no se pierden llaves que ya
+    // traía la etapa (ej. candidate_enabled) cuando otra acción guarda
+    // metadata propia (ej. { submitted: true }).
+    if (metadata !== undefined) update.metadata = { ...(stage.metadata ?? {}), ...metadata };
 
     const { data, error } = await this.supabase.admin
       .from('certification_process_stages')
@@ -84,6 +89,27 @@ export class StagesService {
       old_data: { status: stage.status },
       metadata: { stage_code: stageCode, status, process_id: processId },
     });
+    return data;
+  }
+
+  /**
+   * El evaluador (o admin) decide qué etapas puede ver el candidato — este
+   * reemplaza el badge "pending/completed" en la vista del evaluador: en
+   * vez de solo informar el avance, controla si el candidato la ve o no.
+   * El candidato nunca puede tocar esto (getOne ya filtra por este flag).
+   */
+  async setStageCandidateAccess(processId: string, stageCode: string, enabled: boolean, user: JwtUser) {
+    const process = await this.processes.getProcessForActor(processId, user);
+    this.requireEvaluatorOrAdmin(process, user);
+
+    const stage = await this.getStageRow(processId, stageCode);
+    const { data, error } = await this.supabase.admin
+      .from('certification_process_stages')
+      .update({ metadata: { ...(stage.metadata ?? {}), candidate_enabled: enabled } })
+      .eq('id', stage.id)
+      .select('*')
+      .single();
+    if (error || !data) throw new ConflictException('No se pudo actualizar la etapa.');
     return data;
   }
 
@@ -149,17 +175,130 @@ export class StagesService {
     return data ?? null;
   }
 
+  private async getDiagnosticRaw(processId: string) {
+    const { data } = await this.supabase.admin
+      .from('diagnostics').select('*').eq('process_id', processId).maybeSingle();
+    return data as { data: Record<string, unknown> } | null;
+  }
+
+  /**
+   * Paso 1 — el evaluador elige la modalidad del diagnóstico. A partir de
+   * aquí la UI se ramifica: presencial (el candidato sube foto del examen
+   * físico) o en línea (el candidato lo contesta dentro de la app).
+   */
+  async startDiagnostic(processId: string, dto: StartDiagnosticDto, user: JwtUser) {
+    const process = await this.processes.getProcessForActor(processId, user);
+    this.requireEvaluatorOrAdmin(process, user);
+
+    const existing = await this.getDiagnosticRaw(processId);
+    const { data, error } = await this.supabase.admin
+      .from('diagnostics')
+      .upsert({
+        process_id: processId,
+        data: { ...(existing?.data ?? {}), modality: dto.modality },
+        applied_by: user.id,
+      }, { onConflict: 'process_id' })
+      .select('*')
+      .single();
+    if (error) throw new ConflictException(error.message);
+
+    await this.markStage(processId, 'DIAGNOSTICO', 'in_progress', user);
+    return data;
+  }
+
+  /** Banco de preguntas (con respuestas correctas) del estándar de este proceso — para armar/repasar el examen. */
+  async getDiagnosticQuestions(processId: string, user: JwtUser) {
+    const process = await this.processes.getProcessForActor(processId, user);
+    const { data, error } = await this.supabase.admin
+      .from('diagnostic_questions').select('*').eq('estandar_id', process.estandar_id).order('order_index');
+    if (error) throw new ConflictException(error.message);
+    return data ?? [];
+  }
+
+  /**
+   * Paso 2 (modalidad en línea) — el CANDIDATO contesta el examen dentro
+   * de la app. Se auto-califican opción múltiple y unir reactivos; las
+   * preguntas abiertas las revisa el evaluador al finalizar.
+   */
+  async submitDiagnosticAnswers(processId: string, dto: SubmitDiagnosticAnswersDto, user: JwtUser) {
+    const process = await this.processes.getProcessForActor(processId, user);
+    await this.requireCandidateOwner(process, user);
+
+    const existing = await this.getDiagnosticRaw(processId);
+    const modality = existing?.data?.['modality'];
+    if (modality !== 'en_linea') {
+      throw new ConflictException('Este diagnóstico no está configurado en modalidad "en línea".');
+    }
+
+    const { data: questions } = await this.supabase.admin
+      .from('diagnostic_questions').select('*').eq('estandar_id', process.estandar_id);
+    const byId = new Map((questions ?? []).map((q: any) => [q.id, q]));
+
+    let autoScore = 0;
+    let maxAutoScore = 0;
+    for (const q of questions ?? []) {
+      if (q.type === 'opcion_multiple' || q.type === 'unir_reactivos') maxAutoScore += Number(q.points);
+    }
+
+    const gradedAnswers = dto.answers.map((a) => {
+      const q = byId.get(a.question_id);
+      if (!q) return { ...a, correct: null };
+
+      if (q.type === 'opcion_multiple') {
+        const correct = a.selected_option_id === q.correct_option_id;
+        if (correct) autoScore += Number(q.points);
+        return { ...a, correct };
+      }
+
+      if (q.type === 'unir_reactivos') {
+        const total = (q.options ?? []).length;
+        const hits = (a.matches ?? []).filter((m) => m.right_id === m.selected_left_id).length;
+        const pointsEach = total > 0 ? Number(q.points) / total : 0;
+        autoScore += hits * pointsEach;
+        return { ...a, correct: total > 0 && hits === total, hits, total };
+      }
+
+      return { ...a, correct: null }; // abierta — la revisa el evaluador
+    });
+
+    const newData = {
+      ...(existing?.data ?? {}),
+      answers: gradedAnswers,
+      auto_score: Math.round(autoScore * 100) / 100,
+      max_auto_score: maxAutoScore,
+      candidate_signature: dto.candidate_signature ?? existing?.data?.['candidate_signature'] ?? null,
+      submitted_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await this.supabase.admin
+      .from('diagnostics')
+      .upsert({ process_id: processId, data: newData }, { onConflict: 'process_id' })
+      .select('*')
+      .single();
+    if (error) throw new ConflictException(error.message);
+
+    await this.markStage(processId, 'DIAGNOSTICO', 'in_progress', user, undefined, { submitted: true });
+    return data;
+  }
+
+  /**
+   * Paso 3 (final, ambas modalidades) — el evaluador revisa (foto o
+   * respuestas), decide el resultado y cierra la etapa. Fusiona con lo que
+   * ya había en `data` (modalidad, respuestas, firma del candidato) en vez
+   * de reemplazarlo, para no perder el intento del candidato.
+   */
   async saveDiagnostic(processId: string, dto: SaveDiagnosticDto, user: JwtUser) {
     const process = await this.processes.getProcessForActor(processId, user);
     this.requireEvaluatorOrAdmin(process, user);
 
+    const existing = await this.getDiagnosticRaw(processId);
     const { data, error } = await this.supabase.admin
       .from('diagnostics')
       .upsert({
         process_id: processId,
         result: dto.result ?? null,
         observations: dto.observations ?? null,
-        data: dto.data ?? {},
+        data: { ...(existing?.data ?? {}), ...(dto.data ?? {}) },
         applied_at: new Date().toISOString(),
         applied_by: user.id,
       }, { onConflict: 'process_id' })

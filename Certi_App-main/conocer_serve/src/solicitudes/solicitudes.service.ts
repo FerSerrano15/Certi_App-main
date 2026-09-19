@@ -11,6 +11,7 @@ import { ParticipantsService } from '../participants/participants.service';
 import { CreateSolicitudDto } from './dto/create-solicitud.dto';
 import { ReviewSolicitudDto } from './dto/review-solicitud.dto';
 import { PrepareSolicitudDto } from './dto/prepare-solicitud.dto';
+import { CreateSolicitudFromFichaDto } from './dto/create-solicitud-from-ficha.dto';
 
 type JwtUser = { id: string; role: string; email: string };
 
@@ -312,6 +313,161 @@ export class SolicitudesService {
       metadata: { course_id: dto.course_id, group_id: dto.group_id ?? null },
     });
     return data;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  //  FORMAR GRUPO (ADMIN) — crea la solicitud directo desde una ficha de
+  //  registro ya validada, sin depender de que el candidato haga
+  //  "+Nueva solicitud" por su cuenta (paso 3-4 del flujo antiguo).
+  // ════════════════════════════════════════════════════════════════════════
+
+  /** Fichas de registro validadas de un estándar que aún no tienen una solicitud activa. */
+  async listFichasDisponibles(estandarId: string, user: JwtUser) {
+    this.requireAdmin(user);
+
+    const { data: fichas, error } = await this.supabase.admin
+      .from('fichas_registro')
+      .select('id, user_id, estandar_id, estandar_codigo, estandar_nombre, submitted_at, users!user_id ( full_name, email )')
+      .eq('estandar_id', estandarId)
+      .eq('status', 'validada')
+      .order('submitted_at', { ascending: true });
+    if (error) throw new ConflictException(error.message);
+    if (!fichas?.length) return [];
+
+    const userIds = fichas.map((f: { user_id: string }) => f.user_id);
+    const { data: participants } = await this.supabase.admin
+      .from('participants').select('id, user_id').in('user_id', userIds);
+    const participantIdByUser = new Map(
+      (participants ?? []).map((p: { id: string; user_id: string }) => [p.user_id, p.id]),
+    );
+
+    const participantIds = Array.from(participantIdByUser.values());
+    const { data: activeApplications } = participantIds.length
+      ? await this.supabase.admin
+          .from('course_applications')
+          .select('participant_id, course_id')
+          .eq('estandar_id', estandarId)
+          .in('participant_id', participantIds)
+          .not('status', 'in', '(rechazada,cancelada)')
+      : { data: [] as { participant_id: string; course_id: string | null }[] };
+
+    // Solo bloquea a un candidato si YA tiene un grupo formado (curso
+    // asignado) o un proceso de certificación para este estándar — es decir,
+    // "ya se está certificando" o "ya inició el proceso". Una solicitud
+    // autoservida vieja que quedó en 'pendiente' sin curso asignado (de
+    // cuando existía el "+Nueva solicitud" del candidato) no cuenta como
+    // bloqueo: createFromFicha() la adopta y la deja lista en vez de dejarla
+    // huérfana bloqueando "Formar Grupo" para siempre.
+    const busyParticipantIds = new Set(
+      (activeApplications ?? [])
+        .filter((a: { course_id: string | null }) => a.course_id)
+        .map((a: { participant_id: string }) => a.participant_id),
+    );
+
+    // Un mismo candidato puede tener varios grupos, pero de estándares
+    // distintos — este filtro está siempre acotado a `estandarId`.
+    return fichas.filter((f: { user_id: string }) => {
+      const pid = participantIdByUser.get(f.user_id);
+      return !pid || !busyParticipantIds.has(pid);
+    });
+  }
+
+  /**
+   * Crea (o adopta y prepara) la solicitud formal de un candidato a partir
+   * de su ficha de registro ya validada — sin pasar por "+Nueva solicitud".
+   * Queda en 'aprobada' con curso/grupo asignados, lista para que
+   * CertificationProcessService.formarGrupo() le asigne el evaluador.
+   */
+  async createFromFicha(dto: CreateSolicitudFromFichaDto, user: JwtUser) {
+    this.requireAdmin(user);
+
+    const { data: ficha, error: fichaErr } = await this.supabase.admin
+      .from('fichas_registro')
+      .select('id, user_id, estandar_id, status, submitted_at')
+      .eq('id', dto.ficha_id)
+      .single();
+    if (fichaErr || !ficha) throw new NotFoundException('Ficha de registro no encontrada.');
+    if (ficha.status !== 'validada') {
+      throw new ConflictException('Solo una ficha de registro validada puede formar parte de un grupo.');
+    }
+
+    const { data: course, error: courseErr } = await this.supabase.admin
+      .from('courses').select('id, estandar_id').eq('id', dto.course_id).single();
+    if (courseErr || !course) throw new NotFoundException('Curso no encontrado.');
+    if (course.estandar_id !== ficha.estandar_id) {
+      throw new ConflictException('El curso seleccionado no corresponde al estándar de esta ficha.');
+    }
+
+    if (dto.group_id) {
+      const { data: group, error: groupErr } = await this.supabase.admin
+        .from('groups').select('id, course_id').eq('id', dto.group_id).single();
+      if (groupErr || !group) throw new NotFoundException('Grupo no encontrado.');
+      if (group.course_id !== dto.course_id) {
+        throw new ConflictException('El grupo seleccionado no pertenece al curso indicado.');
+      }
+    }
+
+    const participant = await this.participants.resolveOrCreateParticipantForUser(ficha.user_id);
+
+    const { data: existing } = await this.supabase.admin
+      .from('course_applications')
+      .select('id, status, course_id')
+      .eq('participant_id', participant.id)
+      .eq('estandar_id', ficha.estandar_id)
+      .not('status', 'in', '(rechazada,cancelada)')
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.course_id) {
+        // Ya tiene un grupo formado para este estándar — mismo curso:
+        // reintento idempotente del admin; curso distinto: ya se está
+        // certificando en este estándar, no puede formar OTRO grupo aquí.
+        if (existing.course_id === dto.course_id) return existing;
+        throw new ConflictException(
+          'Este candidato ya tiene un grupo formado para este estándar (no puede pertenecer a dos grupos del mismo estándar).',
+        );
+      }
+
+      // Pendiente/en_revision de un flujo previo autoservido por el propio
+      // candidato, sin curso asignado todavía: la adoptamos y la dejamos
+      // lista para el proceso en vez de dejarla huérfana.
+      const { data: updated, error } = await this.supabase.admin
+        .from('course_applications')
+        .update({
+          status: 'aprobada', course_id: dto.course_id, group_id: dto.group_id ?? null,
+          reviewed_by: user.id, reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id).select('*').single();
+      if (error || !updated) throw new ConflictException('No se pudo preparar la solicitud existente.');
+      await this.auditLogs.log({
+        user_id: user.id, action: 'SOLICITUD_FORMADA_DESDE_FICHA', entity: ENTITY, entityid: updated.id,
+        old_data: { status: existing.status },
+        metadata: { ficha_id: ficha.id, course_id: dto.course_id, group_id: dto.group_id ?? null },
+      });
+      return updated;
+    }
+
+    const { data: created, error } = await this.supabase.admin
+      .from('course_applications')
+      .insert({
+        participant_id: participant.id,
+        estandar_id: ficha.estandar_id,
+        status: 'aprobada',
+        application_date: ficha.submitted_at,
+        course_id: dto.course_id,
+        group_id: dto.group_id ?? null,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .select('*')
+      .single();
+    if (error || !created) throw new ConflictException('No se pudo crear la solicitud: ' + error?.message);
+
+    await this.auditLogs.log({
+      user_id: user.id, action: 'SOLICITUD_FORMADA_DESDE_FICHA', entity: ENTITY, entityid: created.id,
+      metadata: { ficha_id: ficha.id, course_id: dto.course_id, group_id: dto.group_id ?? null },
+    });
+    return created;
   }
 
   /** Usado por CertificationProcessService al crear el proceso, y al cerrarlo. */

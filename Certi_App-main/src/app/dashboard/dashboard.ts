@@ -19,7 +19,7 @@ import { FichaRegistroAdminComponent } from './ficha-registro-admin/ficha-regist
 import { EstandarPickerComponent } from '../shared/estandar-picker/estandar-picker.component';
 import { Estandar } from '../core/services/estandares.service';
 import { MiCertificacionComponent } from './mi-certificacion/mi-certificacion.component';
-import { SolicitudesAdminComponent } from './solicitudes-admin/solicitudes-admin.component';
+import { GruposAdminComponent } from './grupos-admin/grupos-admin.component';
 import { EvaluadorProcesosComponent } from './evaluador-procesos/evaluador-procesos.component';
 import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
 import { FaceAnalysisService, FaceCheckResult } from '../core/services/face-analysis.service';
@@ -41,7 +41,7 @@ import { UserDetailModalComponent } from './user-detail-modal/user-detail-modal.
     FichaRegistroAdminComponent,
     EstandarPickerComponent,
     MiCertificacionComponent,
-    SolicitudesAdminComponent,
+    GruposAdminComponent,
     EvaluadorProcesosComponent,
     UserDetailModalComponent,
   ],
@@ -868,7 +868,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (role === 'CANDIDATO') return [...base,
     { id: 'ficha-registro', label: 'Ficha de Registro' },
-    { id: 'mi-certificacion', label: 'Mi Certificación' },
+    { id: 'mi-certificacion', label: 'Mis Grupos' },
     { id: 'perfil', label: 'Mi perfil' },
     ];
     if (role === 'EVALUADOR') return [...base,
@@ -880,7 +880,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { id: 'usuarios', label: 'Usuarios' },
     { id: 'estandares', label: 'Estándares' },
     { id: 'solicitudes', label: 'Solicitudes de Ficha' },
-    { id: 'solicitudes-certificacion', label: 'Solicitudes de Certificación' },
+    { id: 'solicitudes-certificacion', label: 'Grupos' },
     { id: 'certificados', label: 'Certificados' },
     { id: 'formularios', label: 'Formularios' },
     { id: 'reportes', label: 'Reportes' },
@@ -889,7 +889,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { id: 'usuarios', label: 'Todos los usuarios' },
     { id: 'estandares', label: 'Estándares' },
     { id: 'solicitudes', label: 'Solicitudes de Ficha' },
-    { id: 'solicitudes-certificacion', label: 'Solicitudes de Certificación' },
+    { id: 'solicitudes-certificacion', label: 'Grupos' },
     { id: 'certificados', label: 'Certificados' },
     { id: 'formularios', label: 'Formularios' },
     { id: 'reportes', label: 'Reportes' },

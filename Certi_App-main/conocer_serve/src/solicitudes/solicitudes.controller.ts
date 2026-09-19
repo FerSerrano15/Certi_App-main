@@ -8,6 +8,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateSolicitudDto } from './dto/create-solicitud.dto';
 import { ReviewSolicitudDto } from './dto/review-solicitud.dto';
 import { PrepareSolicitudDto } from './dto/prepare-solicitud.dto';
+import { CreateSolicitudFromFichaDto } from './dto/create-solicitud-from-ficha.dto';
 
 interface Req extends Request {
   user: { id: string; role: string; email: string };
@@ -21,6 +22,12 @@ export class SolicitudesController {
   @Get('mine')
   listMine(@Request() req: Req) {
     return this.svc.listMine(req.user);
+  }
+
+  // Debe ir antes de ':id' para no ser interpretada como un id.
+  @Get('fichas-disponibles')
+  listFichasDisponibles(@Query('estandar_id', ParseUUIDPipe) estandarId: string, @Request() req: Req) {
+    return this.svc.listFichasDisponibles(estandarId, req.user);
   }
 
   @Get()
@@ -42,6 +49,12 @@ export class SolicitudesController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateSolicitudDto, @Request() req: Req) {
     return this.svc.create(dto, req.user);
+  }
+
+  @Post('from-ficha')
+  @HttpCode(HttpStatus.CREATED)
+  createFromFicha(@Body() dto: CreateSolicitudFromFichaDto, @Request() req: Req) {
+    return this.svc.createFromFicha(dto, req.user);
   }
 
   @Post(':id/cancel')

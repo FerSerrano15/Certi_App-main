@@ -11,6 +11,16 @@ import { ParticipantsService } from '../participants/participants.service';
 import { CertificationsService } from '../certifications/certifications.service';
 import { SolicitudesService } from '../solicitudes/solicitudes.service';
 import { CreateProcessDto } from './dto/create-process.dto';
+import { FormarGrupoDto } from './dto/formar-grupo.dto';
+import { DeleteGroupDto } from './dto/delete-group.dto';
+
+export interface FormarGrupoResultItem {
+  ficha_id: string;
+  ok: boolean;
+  process_id?: string;
+  folio?: string;
+  error?: string;
+}
 
 export type JwtUser = { id: string; role: string; email: string };
 
@@ -133,11 +143,63 @@ export class CertificationProcessService {
     return this.getOne(process.id, user);
   }
 
+  // ════════════════════════════════════════════════════════════════════════
+  //  FORMAR GRUPO — acción compuesta del admin: a partir de fichas de
+  //  registro ya validadas, crea/adopta la solicitud de cada candidato, la
+  //  aprueba con el curso/grupo elegido y de inmediato le asigna el
+  //  evaluador. Reemplaza abrir la solicitud de cada candidato una por una.
+  // ════════════════════════════════════════════════════════════════════════
+
+  async formarGrupo(dto: FormarGrupoDto, user: JwtUser): Promise<FormarGrupoResultItem[]> {
+    this.requireAdmin(user);
+
+    // Se valida una sola vez para todo el grupo — si el evaluador no
+    // califica, no tiene sentido seguir candidato por candidato.
+    await this.certifications.assertEvaluatorQualified(dto.evaluator_id, dto.estandar_id);
+
+    const results: FormarGrupoResultItem[] = [];
+    for (const fichaId of dto.ficha_ids) {
+      try {
+        const application = await this.solicitudes.createFromFicha(
+          { ficha_id: fichaId, course_id: dto.course_id, group_id: dto.group_id },
+          user,
+        );
+        const process = await this.create({ application_id: application.id, evaluator_id: dto.evaluator_id }, user);
+        results.push({ ficha_id: fichaId, ok: true, process_id: process.id, folio: process.folio });
+      } catch (err: any) {
+        results.push({
+          ficha_id: fichaId,
+          ok: false,
+          error: err?.message ?? 'No se pudo formar el grupo para esta ficha.',
+        });
+      }
+    }
+    return results;
+  }
+
   /** Cierra el proceso (CIERRE) y marca la solicitud origen como completada. */
   async closeProcess(processId: string, user: JwtUser) {
     const process = await this.advanceStatus(processId, 'CIERRE', user, { completed_at: new Date().toISOString() });
     await this.solicitudes.markCompleted(process.application_id, user);
     return process;
+  }
+
+  /**
+   * Cancela el proceso de un candidato dentro de un grupo (ADMIN) — para
+   * deshacer una asignación hecha por error o dar de baja a un candidato
+   * que ya no continuará. Libera también la solicitud origen (queda
+   * 'cancelada'), por lo que el candidato vuelve a aparecer como disponible
+   * para "Formar Grupo" en este estándar.
+   */
+  async cancelProcess(processId: string, user: JwtUser) {
+    this.requireAdmin(user);
+    const process = await this.getProcessRaw(processId);
+    if (['CIERRE', 'CANCELADO'].includes(process.status)) {
+      throw new ConflictException('Este proceso ya está cerrado o cancelado.');
+    }
+    const updated = await this.advanceStatus(processId, 'CANCELADO', user);
+    await this.solicitudes.cancel(process.application_id, user);
+    return updated;
   }
 
   private async generateUniqueFolio(estandarCodigo: string): Promise<string> {
@@ -189,10 +251,77 @@ export class CertificationProcessService {
       if (!participant || participant.user_id !== user.id) {
         throw new ForbiddenException('No tienes acceso a este expediente de certificación.');
       }
+      // El candidato ve que el grupo existe (listMine), pero no puede ENTRAR
+      // a su expediente hasta que el evaluador asignado lo habilite.
+      if (!process.candidate_enabled) {
+        throw new ForbiddenException('Tu evaluador aún no ha habilitado el acceso a este proceso.');
+      }
       return process;
     }
 
     throw new ForbiddenException('No tienes acceso a este proceso.');
+  }
+
+  /**
+   * El evaluador asignado (o un admin) habilita el acceso del candidato a
+   * su propio expediente. Antes de esto, el candidato solo ve el grupo en
+   * su lista pero no puede abrirlo.
+   */
+  async enableForCandidate(processId: string, user: JwtUser) {
+    const process = await this.getProcessRaw(processId);
+    const isAdmin = ADMIN_ROLES.includes(user.role);
+    const isAssignedEvaluador = user.role === 'EVALUADOR' && process.evaluator_id === user.id;
+    if (!isAdmin && !isAssignedEvaluador) {
+      throw new ForbiddenException('Solo el evaluador asignado o un admin pueden habilitar el acceso del candidato.');
+    }
+    if (process.candidate_enabled) return process;
+
+    const { data, error } = await this.supabase.admin
+      .from('certification_processes')
+      .update({ candidate_enabled: true })
+      .eq('id', processId)
+      .select('*')
+      .single();
+    if (error || !data) throw new ConflictException('No se pudo habilitar el acceso del candidato.');
+
+    await this.auditLogs.log({
+      user_id: user.id, action: 'CANDIDATO_HABILITADO', entity: ENTITY, entityid: processId,
+    });
+    return data;
+  }
+
+  /**
+   * Elimina definitivamente un grupo ya cancelado — solo cuando TODOS sus
+   * candidatos están en CANCELADO. Borra el historial de esos procesos y,
+   * si el grupo tenía nombre, también la fila de `groups` (y sus sesiones).
+   * Acción destructiva: solo un admin puede hacerla.
+   */
+  async deleteCancelledGroup(dto: DeleteGroupDto, user: JwtUser) {
+    if (!ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException('Solo un admin puede eliminar un grupo.');
+    }
+
+    const { data: processes, error } = await this.supabase.admin
+      .from('certification_processes').select('id, status').in('id', dto.process_ids);
+    if (error) throw new ConflictException(error.message);
+    if (!processes || processes.length !== dto.process_ids.length) {
+      throw new NotFoundException('Alguno de los procesos indicados no existe.');
+    }
+    if (processes.some((p: { status: string }) => p.status !== 'CANCELADO')) {
+      throw new ConflictException('Solo se puede eliminar un grupo cuando todos sus candidatos están cancelados.');
+    }
+
+    await this.supabase.admin.from('certification_processes').delete().in('id', dto.process_ids);
+    if (dto.group_id) {
+      await this.supabase.admin.from('sessions').delete().eq('group_id', dto.group_id);
+      await this.supabase.admin.from('groups').delete().eq('id', dto.group_id);
+    }
+
+    await this.auditLogs.log({
+      user_id: user.id, action: 'GRUPO_ELIMINADO', entity: ENTITY, entityid: dto.group_id ?? 'sin-grupo',
+      metadata: { process_ids: dto.process_ids },
+    });
+    return { message: 'Grupo eliminado.' };
   }
 
   // ════════════════════════════════════════════════════════════════════════
@@ -217,10 +346,17 @@ export class CertificationProcessService {
       (a: any, b: any) => (a.certification_stage_catalog?.stage_order ?? 0) - (b.certification_stage_catalog?.stage_order ?? 0),
     );
 
+    // El candidato solo ve las etapas que el evaluador le habilitó
+    // explícitamente (metadata.candidate_enabled) — admin/evaluador siempre
+    // ven el catálogo completo para poder habilitarlas.
+    const visibleStages = user.role === 'CANDIDATO'
+      ? orderedStages.filter((s: any) => s.metadata?.candidate_enabled === true)
+      : orderedStages;
+
     const { data: judgment } = await this.supabase.admin
       .from('process_judgments').select('*').eq('process_id', id).maybeSingle();
 
-    return { ...process, stages: orderedStages, participant, estandar, course, group, evaluator, judgment: judgment ?? null };
+    return { ...process, stages: visibleStages, participant, estandar, course, group, evaluator, judgment: judgment ?? null };
   }
 
   async listMine(user: JwtUser, status?: string) {
@@ -228,7 +364,7 @@ export class CertificationProcessService {
       const participant = await this.participants.resolveOrCreateSelfParticipant(user);
       let q = this.supabase.admin
         .from('certification_processes')
-        .select('*, estandares ( codigo, nombre ), courses ( name, code )')
+        .select('*, estandares ( codigo, nombre ), courses ( name, code ), groups ( id, name ), users:evaluator_id ( id, full_name, email )')
         .eq('participant_id', participant.id)
         .order('created_at', { ascending: false });
       if (status) q = q.eq('status', status);
@@ -239,7 +375,7 @@ export class CertificationProcessService {
     if (user.role === 'EVALUADOR') {
       let q = this.supabase.admin
         .from('certification_processes')
-        .select('*, estandares ( codigo, nombre ), courses ( name, code ), participants ( full_name, email )')
+        .select('*, estandares ( codigo, nombre ), courses ( name, code ), groups ( id, name ), participants ( full_name, email )')
         .eq('evaluator_id', user.id)
         .order('created_at', { ascending: false });
       if (status) q = q.eq('status', status);
@@ -254,7 +390,7 @@ export class CertificationProcessService {
     this.requireAdmin(user);
     let q = this.supabase.admin
       .from('certification_processes')
-      .select('*, estandares ( codigo, nombre ), courses ( name, code ), participants ( full_name, email ), users:evaluator_id ( full_name, email )')
+      .select('*, estandares ( codigo, nombre ), courses ( name, code ), groups ( id, name ), participants ( full_name, email ), users:evaluator_id ( full_name, email )')
       .order('created_at', { ascending: false });
     if (status) q = q.eq('status', status);
     const { data, error } = await q;

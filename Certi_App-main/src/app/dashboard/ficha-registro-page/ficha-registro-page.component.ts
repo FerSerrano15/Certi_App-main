@@ -24,19 +24,26 @@ import { parseCurp, MEXICAN_STATES } from '../../core/utils/curp.util';
   styleUrl: './ficha-registro-page.component.css',
 })
 export class FichaRegistroPageComponent implements OnInit, OnDestroy {
-  private readonly fb   = inject(FormBuilder);
+  private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly fichaSvc = inject(FichaRegistroService);
 
   /** Estándar de competencia para el que se está llenando esta ficha. */
   estandar = input.required<Estandar>();
 
+  /**
+   * Datos de una ficha anterior del candidato (si ya tiene alguna), para
+   * precargar este formulario y evitar que capture todo de nuevo. Se aplican
+   * todos los campos excepto la firma, que siempre se vuelve a dibujar a mano.
+   */
+  datosPrevios = input<Record<string, any> | null>(null);
+
   /** Emite cuando el formulario fue guardado con éxito */
   saved = output<void>();
 
   // ─── State ───────────────────────────────────────────────────────────────
-  loading   = signal(false);
-  toast     = signal('');
+  loading = signal(false);
+  toast = signal('');
   toastType = signal<'success' | 'error' | 'info'>('info');
   submitted = signal(false);
 
@@ -73,20 +80,40 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
 
   // ─── Secciones colapsables ───────────────────────────────────────────────
   sections = signal({
-    personales:    true,
-    domicilio:     false,
-    contacto:      false,
-    complementaria:false,
-    renap:         false,
-    terminos:      false,
-    firma:         false,
+    personales: true,
+    domicilio: false,
+    contacto: false,
+    complementaria: false,
+    renap: false,
+    terminos: false,
+    firma: false,
   });
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────
   ngOnInit() {
     const user = this.auth.currentUser();
     this.buildForm(user?.full_name ?? '', user?.email ?? '', user?.phone ?? '');
+    this.applyDatosPrevios();
     this.watchCurpAutofill();
+  }
+
+  /**
+   * Precarga el formulario con los datos de una ficha anterior del
+   * candidato (todo excepto firma y aceptación de términos, que debe
+   * otorgarse explícitamente para cada ficha nueva).
+   */
+  private applyDatosPrevios() {
+    const datos = this.datosPrevios();
+    if (!datos) return;
+    const { firma, terminosAceptados, ...rest } = datos;
+    this.form.patchValue(rest);
+
+    // Sincroniza el select "Entidad Federativa" cuando el valor precargado
+    // no está en la lista de estados (se guardó con la opción "Otro").
+    const entidad = rest['entidadFederativa'];
+    if (entidad && !this.estadosList.includes(entidad)) {
+      this.entidadOtroSelected.set(true);
+    }
   }
 
   /**
@@ -147,44 +174,44 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
   private buildForm(name: string, email: string, phone: string) {
     this.form = this.fb.group({
       // Datos personales
-      nombreCompleto:  [name,  [Validators.required, Validators.minLength(3)]],
-      lugarNacimiento: ['',    Validators.required],
-      nacionalidad:    ['Mexicana', Validators.required],
-      curp:            ['',    [Validators.required, Validators.minLength(18), Validators.maxLength(18),
-                                Validators.pattern(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/i)]],
-      genero:          ['',    Validators.required],
-      fechaNacimiento: ['',    Validators.required],
+      nombreCompleto: [name, [Validators.required, Validators.minLength(3)]],
+      lugarNacimiento: ['', Validators.required],
+      nacionalidad: ['Mexicana', Validators.required],
+      curp: ['', [Validators.required, Validators.minLength(18), Validators.maxLength(18),
+      Validators.pattern(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/i)]],
+      genero: ['', Validators.required],
+      fechaNacimiento: ['', Validators.required],
       // Domicilio
-      calle:             ['', Validators.required],
-      numero:            ['', Validators.required],
-      cp:                ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-      colonia:           ['', Validators.required],
-      ciudad:            ['', Validators.required],
+      calle: ['', Validators.required],
+      numero: ['', Validators.required],
+      cp: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
+      colonia: ['', Validators.required],
+      ciudad: ['', Validators.required],
       entidadFederativa: ['', Validators.required],
       // Contacto
-      email:           [email, [Validators.required, Validators.email]],
-      telefono:        [phone, [Validators.required, Validators.pattern(/^\d{10}$/)]],
-      telefonoCelular: ['',    [Validators.pattern(/^\d{10}$/)]],
+      email: [email, [Validators.required, Validators.email]],
+      telefono: [phone, [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      telefonoCelular: ['', [Validators.pattern(/^\d{10}$/)]],
       // RENAP
       consentimientoRenap: ['', Validators.required],
       // Complementaria
-      sabeLeerEscribir:     ['', Validators.required],
-      cuentaEstudios:       ['', Validators.required],
-      cualesEstudios:       [''],
-      tieneDiscapacidad:    ['', Validators.required],
-      discapacidadMotriz:        [false],
-      discapacidadVisual:        [false],
-      discapacidadAuditiva:      [false],
-      discapacidadLenguaje:      [false],
-      discapacidadIntelectual:   [false],
-      discapacidadOtras:         [false],
-      idiomas:              ['Español'],
-      trabajaActualmente:   ['', Validators.required],
-      puestoTrabajo:        [''],
-      experienciaLaboral:   [''],
-      observaciones:        [''],
-      cuentaCertificacion:  ['', Validators.required],
-      cualesCertificaciones:[''],
+      sabeLeerEscribir: ['', Validators.required],
+      cuentaEstudios: ['', Validators.required],
+      cualesEstudios: [''],
+      tieneDiscapacidad: ['', Validators.required],
+      discapacidadMotriz: [false],
+      discapacidadVisual: [false],
+      discapacidadAuditiva: [false],
+      discapacidadLenguaje: [false],
+      discapacidadIntelectual: [false],
+      discapacidadOtras: [false],
+      idiomas: ['Español'],
+      trabajaActualmente: ['', Validators.required],
+      puestoTrabajo: [''],
+      experienciaLaboral: [''],
+      observaciones: [''],
+      cuentaCertificacion: ['', Validators.required],
+      cualesCertificaciones: [''],
       // Términos y condiciones
       terminosAceptados: [false, Validators.requiredTrue],
     });
@@ -212,15 +239,15 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
     // Ajustar resolución al DPR
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width  = rect.width  * dpr;
+    canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     this.ctx = canvas.getContext('2d');
     if (!this.ctx) return;
     this.ctx.scale(dpr, dpr);
     this.ctx.strokeStyle = '#1a1a2e';
-    this.ctx.lineWidth   = 2.5;
-    this.ctx.lineCap     = 'round';
-    this.ctx.lineJoin    = 'round';
+    this.ctx.lineWidth = 2.5;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
     this.canvasReady.set(true);
 
     const getPos = (e: MouseEvent | Touch) => {
@@ -239,7 +266,7 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
       if (!this.drawing) return;
       const p = getPos(e); this.ctx!.lineTo(p.x, p.y); this.ctx!.stroke();
     });
-    canvas.addEventListener('mouseup',    () => { this.drawing = false; this.captureSignature(); });
+    canvas.addEventListener('mouseup', () => { this.drawing = false; this.captureSignature(); });
     canvas.addEventListener('mouseleave', () => { this.drawing = false; });
 
     canvas.addEventListener('touchstart', (e) => {
@@ -281,13 +308,13 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
       this.showToast('Completa todos los campos obligatorios antes de continuar.', 'error');
       // Abrir todas las secciones para que el usuario vea los errores
       this.sections.set({
-        personales:    true,
-        domicilio:     true,
-        contacto:      true,
-        renap:         true,
-        complementaria:true,
-        terminos:      true,
-        firma:         true,
+        personales: true,
+        domicilio: true,
+        contacto: true,
+        renap: true,
+        complementaria: true,
+        terminos: true,
+        firma: true,
       });
       return;
     }
@@ -309,7 +336,8 @@ export class FichaRegistroPageComponent implements OnInit, OnDestroy {
       this.showToast('¡Ficha de Registro enviada exitosamente!', 'success');
       setTimeout(() => this.saved.emit(), 2000);
     } else {
-      this.showToast(result.error || 'Error al guardar. Verifica tu conexión e intenta de nuevo.', 'error');
+      const errMsg = (result as { ok: false; error: string }).error;
+      this.showToast(errMsg, 'error');
     }
   }
 

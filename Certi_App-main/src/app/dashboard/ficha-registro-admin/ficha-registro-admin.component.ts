@@ -5,6 +5,7 @@ import { PdfService } from '../../core/services/pdf.service';
 import {
   FichaRegistroService, FichaRegistroWithUser, FichaRegistroStatus,
 } from '../../core/services/ficha-registro.service';
+import { PdfPreviewDialogService } from '../../shared/pdf-preview-dialog/pdf-preview-dialog.service';
 
 const STATUS_FILTERS: { value: FichaRegistroStatus | 'TODAS'; label: string }[] = [
   { value: 'TODAS',    label: 'Todas' },
@@ -13,7 +14,12 @@ const STATUS_FILTERS: { value: FichaRegistroStatus | 'TODAS'; label: string }[] 
   { value: 'rechazada', label: 'Rechazadas' },
 ];
 
-/** Vista admin "Solicitudes" — todas las fichas de registro enviadas, con su estado. */
+/**
+ * Vista admin "Solicitudes de Ficha" — todas las fichas de registro
+ * enviadas, con su estado. Una vez validada una ficha, el admin la agrupa
+ * junto con otros candidatos del mismo estándar desde la pantalla "Grupos"
+ * (→ botón "Formar Grupo"), que le asigna curso/grupo/evaluador.
+ */
 @Component({
   selector: 'app-ficha-registro-admin',
   standalone: true,
@@ -24,6 +30,7 @@ const STATUS_FILTERS: { value: FichaRegistroStatus | 'TODAS'; label: string }[] 
 export class FichaRegistroAdminComponent implements OnInit {
   private readonly svc = inject(FichaRegistroService);
   private readonly pdfSvc = inject(PdfService);
+  private readonly pdfPreview = inject(PdfPreviewDialogService);
   private readonly auth = inject(AuthService);
 
   readonly statusFilters = STATUS_FILTERS;
@@ -92,7 +99,12 @@ export class FichaRegistroAdminComponent implements OnInit {
     this.downloadingId.set(f.id);
     try {
       const url = await this.pdfSvc.getFichaRegistroBlobUrlByFichaId(f.id, token);
-      window.open(url, '_blank');
+      const name = f.users?.full_name ?? f.id;
+      this.pdfPreview.open({
+        title: `Ficha de Registro — ${f.users?.full_name ?? f.estandar_codigo}`,
+        blobUrl: url,
+        fileName: `ficha-registro_${name.replace(/\s+/g, '-').toLowerCase()}`,
+      });
     } catch {
       // silencioso: el admin puede reintentar
     } finally {

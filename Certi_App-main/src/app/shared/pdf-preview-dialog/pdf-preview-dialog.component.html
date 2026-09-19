@@ -1,0 +1,19 @@
+@if (svc.state(); as s) {
+<div class="pd-backdrop" (click)="svc.close()">
+  <div class="pd-box" (click)="$event.stopPropagation()">
+    <div class="pd-header">
+      <h3 class="pd-title">{{ s.title }}</h3>
+      <button type="button" class="pd-close" (click)="svc.close()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="pd-body">
+      @if (safeUrl(); as url) {
+        <iframe [src]="url" class="pd-frame" title="Vista previa del PDF"></iframe>
+      }
+    </div>
+    <div class="pd-actions">
+      <button type="button" class="pd-btn pd-btn-cancel" (click)="svc.close()">Cerrar</button>
+      <button type="button" class="pd-btn pd-btn-download" (click)="download()">Descargar PDF</button>
+    </div>
+  </div>
+</div>
+}

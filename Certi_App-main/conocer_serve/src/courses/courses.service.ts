@@ -27,6 +27,31 @@ export class CoursesService {
     }
   }
 
+  /**
+   * Un admin puede editar cualquier grupo; un EVALUADOR solo el grupo donde
+   * él mismo es `groups.evaluator_id` — así puede llevar su grupo "como un
+   * LMS" (nombre, fechas, cupo, sesiones) sin depender del admin para cada
+   * detalle operativo.
+   */
+  private async assertAdminOrGroupEvaluador(groupId: string, user: JwtUser) {
+    const { data: group, error } = await this.supabase.admin
+      .from('groups').select('id, course_id, evaluator_id').eq('id', groupId)
+      .single<{ id: string; course_id: string; evaluator_id: string | null }>();
+    if (error || !group) throw new NotFoundException('Grupo no encontrado.');
+
+    if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) return group;
+    if (user.role === 'EVALUADOR' && group.evaluator_id === user.id) return group;
+    throw new ForbiddenException('Solo el evaluador asignado a este grupo (o un admin) puede editarlo.');
+  }
+
+  /** Campos operativos que un EVALUADOR puede tocar de su grupo — no reasigna curso ni evaluador. */
+  private pickEvaluadorEditableGroupFields(dto: Record<string, unknown>) {
+    const allowed = ['name', 'code', 'start_date', 'end_date', 'capacity', 'status'];
+    const picked: Record<string, unknown> = {};
+    for (const key of allowed) if (key in dto) picked[key] = dto[key];
+    return picked;
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   //  PROGRAMS
   // ════════════════════════════════════════════════════════════════════════════
@@ -232,18 +257,20 @@ export class CoursesService {
   }
 
   async updateGroup(id: string, dto: Record<string, unknown>, user: JwtUser) {
-    this.requireAdmin(user);
-    if (dto['evaluator_id']) {
-      const { data: current } = await this.supabase.admin
-        .from('groups').select('course_id').eq('id', id)
-        .single<{ course_id: string }>();
-      const courseId = (dto['course_id'] as string) ?? current?.course_id;
-      if (courseId) {
-        await this.assertEvaluatorEligible(courseId, dto['evaluator_id'] as string, user);
-      }
+    const group = await this.assertAdminOrGroupEvaluador(id, user);
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
+
+    // Un evaluador solo puede tocar los datos operativos de SU grupo — no
+    // reasignar curso ni evaluador; eso sigue siendo exclusivo del admin.
+    const payload = isAdmin ? dto : this.pickEvaluadorEditableGroupFields(dto);
+
+    if (payload['evaluator_id']) {
+      const courseId = (payload['course_id'] as string) ?? group.course_id;
+      await this.assertEvaluatorEligible(courseId, payload['evaluator_id'] as string, user);
     }
+
     const { data, error } = await this.supabase.admin
-      .from('groups').update({ ...dto, updated_at: new Date().toISOString() })
+      .from('groups').update({ ...payload, updated_at: new Date().toISOString() })
       .eq('id', id).select('*').single();
     if (error || !data) throw new NotFoundException('Grupo no encontrado.');
     return data;
@@ -271,18 +298,22 @@ export class CoursesService {
     return data ?? [];
   }
 
-  async createSession(dto: { group_id: string; title: string; session_date: string; duration_hours?: number }, user: JwtUser) {
-    this.requireAdmin(user);
+  async createSession(dto: { group_id: string; session_date: string; start_time?: string; end_time?: string; topic?: string }, user: JwtUser) {
+    await this.assertAdminOrGroupEvaluador(dto.group_id, user);
     const { data, error } = await this.supabase.admin
       .from('sessions')
-      .insert({ ...dto, duration_hours: dto.duration_hours ?? 0 })
+      .insert(dto)
       .select('*').single();
     if (error) throw new ConflictException(error.message);
     return data;
   }
 
   async deleteSession(id: string, user: JwtUser) {
-    this.requireAdmin(user);
+    const { data: session, error: findErr } = await this.supabase.admin
+      .from('sessions').select('group_id').eq('id', id).single<{ group_id: string }>();
+    if (findErr || !session) throw new NotFoundException('Sesión no encontrada.');
+    await this.assertAdminOrGroupEvaluador(session.group_id, user);
+
     const { error } = await this.supabase.admin.from('sessions').delete().eq('id', id);
     if (error) throw new NotFoundException(error.message);
     return { message: 'Sesión eliminada.' };

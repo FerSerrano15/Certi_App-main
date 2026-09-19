@@ -4,6 +4,7 @@ import { EnrollmentFormsService, EnrollmentFormWithParticipant, EnrollmentForm }
 import { PdfService } from '../../core/services/pdf.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
+import { PdfPreviewDialogService } from '../../shared/pdf-preview-dialog/pdf-preview-dialog.service';
 
 interface FormGroup {
   participantName: string;
@@ -26,6 +27,7 @@ export class EnrollmentFormsAdminComponent implements OnInit {
   private readonly svc  = inject(EnrollmentFormsService);
   private readonly confirmSvc = inject(ConfirmDialogService);
   private readonly pdf  = inject(PdfService);
+  private readonly pdfPreview = inject(PdfPreviewDialogService);
   readonly auth         = inject(AuthService);
 
   // ─── State ───────────────────────────────────────────────────────────────
@@ -96,15 +98,17 @@ export class EnrollmentFormsAdminComponent implements OnInit {
   }
   closeFormView() { this.viewingForm.set(null); }
 
-  // ─── Downloads ───────────────────────────────────────────────────────────
+  // ─── Vista previa / descarga ─────────────────────────────────────────────
   async downloadCarta(form: EnrollmentFormWithParticipant) {
     this.downloadingId.set(form.id);
     try {
       const name = form.enrollments?.participants?.full_name ?? 'participante';
-      await this.pdf.downloadCartaSolicitud(
-        form.form_data,
-        `carta-solicitud_${name.replace(/\s+/g, '-').toLowerCase()}`,
-      );
+      const blobUrl = await this.pdf.getCartaSolicitudBlobUrl(form.form_data);
+      this.pdfPreview.open({
+        title: 'Carta de Solicitud de Interés',
+        blobUrl,
+        fileName: `carta-solicitud_${name.replace(/\s+/g, '-').toLowerCase()}`,
+      });
     } catch (e) {
       this.showToast('❌ Error al generar el PDF');
     } finally {
@@ -116,10 +120,12 @@ export class EnrollmentFormsAdminComponent implements OnInit {
     this.downloadingId.set(form.id);
     try {
       const name = form.enrollments?.participants?.full_name ?? 'participante';
-      await this.pdf.downloadFichaRegistro(
-        form.form_data,
-        `ficha-registro_${name.replace(/\s+/g, '-').toLowerCase()}`,
-      );
+      const blobUrl = await this.pdf.getFichaRegistroFormBlobUrl(form.form_data);
+      this.pdfPreview.open({
+        title: 'Ficha de Registro',
+        blobUrl,
+        fileName: `ficha-registro_${name.replace(/\s+/g, '-').toLowerCase()}`,
+      });
     } catch (e) {
       this.showToast('❌ Error al generar el PDF');
     } finally {

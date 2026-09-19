@@ -35,10 +35,29 @@ export interface CertificationProcess {
   status: ProcessStatus;
   completed_at: string | null;
   created_at: string;
+  /** El candidato solo puede abrir su expediente cuando el evaluador (o un admin) lo habilita explícitamente. */
+  candidate_enabled: boolean;
   estandares?: { codigo: string; nombre: string } | null;
   courses?: { name: string; code: string } | null;
+  groups?: { id: string; name: string } | null;
   participants?: { full_name: string; email: string } | null;
   users?: { id: string; full_name: string; email: string } | null;
+}
+
+export interface FormarGrupoRequest {
+  estandar_id: string;
+  ficha_ids: string[];
+  course_id: string;
+  group_id?: string;
+  evaluator_id: string;
+}
+
+export interface FormarGrupoResultItem {
+  ficha_id: string;
+  ok: boolean;
+  process_id?: string;
+  folio?: string;
+  error?: string;
 }
 
 export interface CertificationProcessDetail extends CertificationProcess {
@@ -87,6 +106,48 @@ export class CertificationProcessService {
   async getOne(id: string): Promise<CertificationProcessDetail | null> {
     try { return await firstValueFrom(this.api.get<CertificationProcessDetail>(`/certification-process/${id}`, this.token())); }
     catch { return null; }
+  }
+
+  /**
+   * Acción compuesta "Formar Grupo": a partir de fichas de registro ya
+   * validadas, crea la solicitud de cada candidato, la aprueba con el
+   * curso/grupo elegido y le asigna el evaluador de una sola vez —
+   * reemplaza tener que abrir la solicitud de cada candidato una por una.
+   */
+  async formarGrupo(dto: FormarGrupoRequest): Promise<{ ok: boolean; data: FormarGrupoResultItem[] | null; error?: string }> {
+    try {
+      const data = await firstValueFrom(
+        this.api.post<FormarGrupoResultItem[]>('/certification-process/formar-grupo', dto, this.token())
+      );
+      return { ok: true, data };
+    } catch (err: unknown) { return { ok: false, data: null, error: this.extractError(err) }; }
+  }
+
+  /**
+   * Cancela el proceso de un candidato (ADMIN) — libera también la
+   * solicitud origen, así vuelve a estar disponible para "Formar Grupo".
+   */
+  async cancelProcess(id: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await firstValueFrom(this.api.post(`/certification-process/${id}/cancel`, {}, this.token()));
+      return { ok: true };
+    } catch (err: unknown) { return { ok: false, error: this.extractError(err) }; }
+  }
+
+  /** El evaluador asignado (o un admin) habilita el acceso del candidato a su propio expediente. */
+  async enableForCandidate(id: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await firstValueFrom(this.api.post(`/certification-process/${id}/enable-candidate`, {}, this.token()));
+      return { ok: true };
+    } catch (err: unknown) { return { ok: false, error: this.extractError(err) }; }
+  }
+
+  /** Elimina definitivamente un grupo ya cancelado (todos sus candidatos en CANCELADO). Solo admin. */
+  async deleteCancelledGroup(processIds: string[], groupId?: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await firstValueFrom(this.api.post('/certification-process/delete-group', { process_ids: processIds, group_id: groupId }, this.token()));
+      return { ok: true };
+    } catch (err: unknown) { return { ok: false, error: this.extractError(err) }; }
   }
 
   extractError(err: unknown): string {

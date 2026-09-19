@@ -13,6 +13,17 @@
     <span class="pw-status-badge" [attr.data-status]="process()!.status">{{ statusLabel(process()!.status) }}</span>
   </div>
 
+  @if (canActEvaluador()) {
+  <div class="pw-candidate-access" [class.enabled]="process()!.candidate_enabled">
+    @if (process()!.candidate_enabled) {
+    <span>✓ El candidato ya tiene acceso a este expediente.</span>
+    } @else {
+    <span>El candidato aún NO puede ver este expediente.</span>
+    <button class="pw-btn primary" [disabled]="busy()" (click)="doEnableForCandidate()">Habilitar acceso del candidato</button>
+    }
+  </div>
+  }
+
   <div class="pw-meta">
     <div><span class="pw-meta-label">Candidato</span><span>{{ process()!.participant?.full_name }}</span></div>
     <div><span class="pw-meta-label">Evaluador</span><span>{{ process()!.evaluator?.full_name }}</span></div>
@@ -42,11 +53,17 @@
   <div class="pw-stages">
     @for (stage of process()!.stages; track stage.id) {
     <div class="pw-stage" [class.expanded]="expanded() === stage.stage_code">
-      <button class="pw-stage-header" (click)="toggle(stage)">
-        <span class="pw-stage-icon" [attr.data-status]="stage.status">{{ stageIcon(stage.status) }}</span>
-        <span class="pw-stage-name">{{ stageLabel(stage.stage_code) }}</span>
-        <span class="pw-stage-status">{{ stage.status }}</span>
-      </button>
+      <div class="pw-stage-header">
+        <button type="button" class="pw-stage-header-main" (click)="toggle(stage)">
+          <span class="pw-stage-icon" [attr.data-status]="stage.status">{{ stageIcon(stage.status) }}</span>
+          <span class="pw-stage-name">{{ stageLabel(stage.stage_code) }}</span>
+        </button>
+        @if (canActEvaluador()) {
+          <button type="button" class="pw-stage-toggle" [class.on]="isStageEnabledForCandidate(stage)" (click)="toggleStageAccess(stage, $event)">
+            {{ isStageEnabledForCandidate(stage) ? 'Habilitado' : 'No habilitado' }}
+          </button>
+        }
+      </div>
 
       @if (expanded() === stage.stage_code) {
       <div class="pw-stage-body">
@@ -65,22 +82,233 @@
 
         <!-- 2) Diagnóstico -->
         @if (stage.stage_code === 'DIAGNOSTICO') {
+
+          <!-- Banco de preguntas del estándar (evaluador/admin) -->
           @if (canActEvaluador()) {
-          <label class="pw-field">Resultado
-            <select [ngModel]="diagResult()" (ngModelChange)="diagResult.set($event)">
-              <option value="competente">Competente</option>
-              <option value="no_competente">No competente</option>
-              <option value="en_proceso">En proceso</option>
-            </select>
-          </label>
-          <label class="pw-field">Observaciones
-            <textarea [ngModel]="diagObservations()" (ngModelChange)="diagObservations.set($event)" rows="2"></textarea>
-          </label>
-          <button class="pw-btn primary" [disabled]="busy()" (click)="doSaveDiagnostic()">Guardar diagnóstico</button>
-          } @else if (diagnostic()) {
-          <p>Resultado: <strong>{{ diagnostic()!['result'] }}</strong></p>
-          } @else {
-          <p class="pw-muted">El evaluador aún no ha aplicado el diagnóstico.</p>
+            <button type="button" class="pw-btn" (click)="diagBankOpen() ? closeDiagBank() : openDiagBank()">
+              {{ diagBankOpen() ? 'Cerrar banco de preguntas' : '📋 Banco de preguntas de este estándar' }}
+            </button>
+
+            @if (diagBankOpen()) {
+              <div class="pw-diag-bank">
+                @if (diagBankLoading()) {
+                  <p class="pw-muted">Cargando…</p>
+                } @else {
+                  @if (diagBank().length) {
+                    <div class="pw-diag-bank-list">
+                      @for (q of diagBank(); track q.id) {
+                        <div class="pw-diag-bank-item">
+                          <div>
+                            <span class="pw-diag-bank-type">
+                              {{ q.type === 'opcion_multiple' ? 'Opción múltiple' : q.type === 'abierta' ? 'Abierta' : 'Unir reactivos' }}
+                            </span>
+                            <span class="pw-diag-bank-prompt">{{ q.prompt }}</span>
+                          </div>
+                          <button type="button" class="pw-btn danger" (click)="deleteQuestion(q.id)">Eliminar</button>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="pw-muted">Aún no hay preguntas para este estándar.</p>
+                  }
+
+                  <h4 class="pw-diag-subtitle">Agregar pregunta</h4>
+                  <label class="pw-field">Tipo
+                    <select [ngModel]="newQType()" (ngModelChange)="newQType.set($event)">
+                      <option value="opcion_multiple">Opción múltiple</option>
+                      <option value="abierta">Abierta</option>
+                      <option value="unir_reactivos">Unir reactivos</option>
+                    </select>
+                  </label>
+                  <label class="pw-field">Enunciado / instrucciones
+                    <textarea [ngModel]="newQPrompt()" (ngModelChange)="newQPrompt.set($event)" rows="2"></textarea>
+                  </label>
+                  <label class="pw-field">Puntos
+                    <input type="number" min="0.1" step="0.1" [ngModel]="newQPoints()" (ngModelChange)="newQPoints.set($event)">
+                  </label>
+
+                  @if (newQType() === 'opcion_multiple') {
+                    <div class="pw-diag-options">
+                      @for (o of newQOptions(); track o.id) {
+                        <div class="pw-diag-option-row">
+                          <input type="radio" name="correctOpt" [checked]="newQCorrectId() === o.id" (change)="newQCorrectId.set(o.id)">
+                          <input type="text" placeholder="Texto de la opción" [ngModel]="o.text" (ngModelChange)="updateOptionField(o.id, 'text', $event)">
+                          <button type="button" class="pw-btn danger" (click)="removeOptionRow(o.id)">✕</button>
+                        </div>
+                      }
+                    </div>
+                    <button type="button" class="pw-btn" (click)="addOptionRow()">+ Agregar opción</button>
+                    <p class="pw-hint">Marca con el radio cuál opción es la correcta.</p>
+                  }
+
+                  @if (newQType() === 'unir_reactivos') {
+                    <div class="pw-diag-options">
+                      @for (o of newQOptions(); track o.id) {
+                        <div class="pw-diag-option-row">
+                          <input type="text" placeholder="Término (columna izquierda)" [ngModel]="o.left" (ngModelChange)="updateOptionField(o.id, 'left', $event)">
+                          <input type="text" placeholder="Definición (columna derecha)" [ngModel]="o.right" (ngModelChange)="updateOptionField(o.id, 'right', $event)">
+                          <button type="button" class="pw-btn danger" (click)="removeOptionRow(o.id)">✕</button>
+                        </div>
+                      }
+                    </div>
+                    <button type="button" class="pw-btn" (click)="addOptionRow()">+ Agregar par término-definición</button>
+                  }
+
+                  <button type="button" class="pw-btn primary" [disabled]="savingQuestion()" (click)="createQuestion()">
+                    {{ savingQuestion() ? 'Guardando…' : 'Agregar pregunta al banco' }}
+                  </button>
+                }
+              </div>
+            }
+          }
+
+          <!-- Elegir modalidad -->
+          @if (!diagModality()) {
+            @if (canActEvaluador()) {
+              <p>Elige la modalidad de este diagnóstico:</p>
+              <div class="pw-diag-modality-choice">
+                <button type="button" class="pw-btn primary" [disabled]="busy()" (click)="doStartDiagnostic('presencial')">Presencial</button>
+                <button type="button" class="pw-btn primary" [disabled]="busy()" (click)="doStartDiagnostic('en_linea')">En línea</button>
+              </div>
+            } @else {
+              <p class="pw-muted">El evaluador aún no ha configurado el diagnóstico.</p>
+            }
+          }
+
+          <!-- Presencial -->
+          @if (diagModality() === 'presencial') {
+            @if (isCandidato() && !diagIsFinalized()) {
+              <div class="pw-diag-photo-upload">
+                <p>Sube una foto legible de tu examen ya contestado.</p>
+                <input type="file" accept="image/*,application/pdf" (change)="onDiagPhotoSelected($event)">
+                <button type="button" class="pw-btn primary" [disabled]="diagUploadingPhoto()" (click)="doUploadDiagnosticPhoto()">
+                  {{ diagUploadingPhoto() ? 'Subiendo…' : 'Subir foto' }}
+                </button>
+              </div>
+            }
+            @if (diagPhotoUrl()) {
+              <div class="pw-diag-photo-preview">
+                <img [src]="diagPhotoUrl()" alt="Foto del examen">
+              </div>
+            } @else if (!isCandidato()) {
+              <p class="pw-muted">El candidato aún no sube la foto de su examen.</p>
+            }
+          }
+
+          <!-- En línea -->
+          @if (diagModality() === 'en_linea') {
+            @if (isCandidato() && !diagIsSubmitted()) {
+              @for (q of diagQuestions(); track q.id) {
+                <div class="pw-diag-question">
+                  <p class="pw-diag-question-prompt">{{ q.prompt }}</p>
+
+                  @if (q.type === 'opcion_multiple') {
+                    @for (o of optionsFor(q); track o.id) {
+                      <label class="pw-diag-radio">
+                        <input type="radio" [name]="'q-' + q.id" [checked]="diagAnswerDraft()[q.id]?.selected_option_id === o.id" (change)="setOpcionMultiple(q, o.id)">
+                        {{ o.text }}
+                      </label>
+                    }
+                  }
+
+                  @if (q.type === 'abierta') {
+                    <textarea rows="3" [ngModel]="diagAnswerDraft()[q.id]?.text ?? ''" (ngModelChange)="setAbierta(q, $event)"></textarea>
+                  }
+
+                  @if (q.type === 'unir_reactivos') {
+                    <div class="pw-diag-match">
+                      <div class="pw-diag-match-terms">
+                        @for (o of q.options; track o.id; let i = $index) {
+                          <div class="pw-diag-match-term">{{ i + 1 }}.- {{ o.left }}</div>
+                        }
+                      </div>
+                      @for (o of optionsFor(q); track o.id) {
+                        <div class="pw-diag-match-row">
+                          <select [ngModel]="diagAnswerDraft()[q.id]?.matchByRight?.[o.id] ?? ''" (ngModelChange)="setMatch(q, o.id, $event)">
+                            <option value="" disabled>N°</option>
+                            @for (t of q.options; track t.id; let i = $index) {
+                              <option [value]="t.id">{{ i + 1 }}</option>
+                            }
+                          </select>
+                          <span>{{ o.right }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="pw-diag-signature">
+                <app-signature-pad label="Tu firma" (changed)="diagCandidateSignature.set($event)"></app-signature-pad>
+              </div>
+              <button type="button" class="pw-btn primary" [disabled]="diagSubmittingAnswers()" (click)="doSubmitDiagnosticAnswers()">
+                {{ diagSubmittingAnswers() ? 'Enviando…' : 'Enviar respuestas' }}
+              </button>
+            } @else if (isCandidato() && diagIsSubmitted() && !diagIsFinalized()) {
+              <p class="pw-muted">Ya enviaste tus respuestas. En espera de revisión del evaluador.</p>
+            }
+
+            @if (canActEvaluador() && diagIsSubmitted()) {
+              <div class="pw-diag-review">
+                <p class="pw-diag-calificacion">Calificación: <strong>{{ diagCalificacion() }} / 10</strong></p>
+                @for (q of diagQuestions(); track q.id) {
+                  <div class="pw-diag-question">
+                    <p class="pw-diag-question-prompt">{{ q.prompt }}</p>
+                    @if (q.type === 'abierta') {
+                      <p class="pw-diag-answer-text">{{ getServerAnswer(q.id)?.text || '(sin respuesta)' }}</p>
+                      @if (!diagIsFinalized()) {
+                        <div class="pw-diag-grade-choice">
+                          <label><input type="radio" [name]="'grade-' + q.id" [checked]="diagAbiertaGrades()[q.id] === true" (change)="setAbiertaGrade(q.id, true)"> Correcta</label>
+                          <label><input type="radio" [name]="'grade-' + q.id" [checked]="diagAbiertaGrades()[q.id] === false" (change)="setAbiertaGrade(q.id, false)"> Incorrecta</label>
+                        </div>
+                      } @else {
+                        <p class="pw-diag-answer-result" [class.ok]="diagAbiertaGrades()[q.id] === true" [class.bad]="diagAbiertaGrades()[q.id] === false">
+                          {{ diagAbiertaGrades()[q.id] === true ? '✓ Correcta' : '✗ Incorrecta' }}
+                        </p>
+                      }
+                    } @else {
+                      <p class="pw-diag-answer-result" [class.ok]="getServerAnswer(q.id)?.correct === true" [class.bad]="getServerAnswer(q.id)?.correct === false">
+                        {{ getServerAnswer(q.id)?.correct === true ? '✓ Correcto' : (getServerAnswer(q.id)?.correct === false ? '✗ Incorrecto' : '') }}
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Cierre del evaluador (ambas modalidades) -->
+          @if (canActEvaluador() && diagModality() && !diagIsFinalized() && (diagModality() === 'presencial' ? diagPhoto() : diagIsSubmitted())) {
+            <div class="pw-diag-finalize">
+              <label class="pw-field">Lugar de aplicación
+                <input type="text" placeholder="Ej. Oficinas CONOCER, CDMX" [ngModel]="diagLugar()" (ngModelChange)="diagLugar.set($event)">
+              </label>
+              <label class="pw-field">Resultado
+                <select [ngModel]="diagResult()" (ngModelChange)="diagResult.set($event)">
+                  <option value="Excelente">Excelente</option>
+                  <option value="Se recomienda alineación">Se recomienda alineación</option>
+                  <option value="Se recomienda capacitación">Se recomienda capacitación</option>
+                </select>
+              </label>
+              <label class="pw-field">Observaciones
+                <textarea [ngModel]="diagObservations()" (ngModelChange)="diagObservations.set($event)" rows="2"></textarea>
+              </label>
+              <label class="pw-field">Decisión del candidato
+                <select [ngModel]="diagDecision()" (ngModelChange)="diagDecision.set($event)">
+                  <option value="">— Selecciona —</option>
+                  <option value="participar">Solicito participar en el proceso de evaluación</option>
+                  <option value="curso_taller">Solicito tomar un curso-taller</option>
+                </select>
+              </label>
+              <app-signature-pad label="Firma del evaluador" (changed)="diagEvaluatorSignature.set($event)"></app-signature-pad>
+              <button type="button" class="pw-btn primary" [disabled]="busy()" (click)="doSaveDiagnostic()">Guardar diagnóstico</button>
+            </div>
+          } @else if (diagIsFinalized()) {
+            <p class="pw-ok">✓ Resultado: <strong>{{ diagnostic()!['result'] }}</strong></p>
+          }
+
+          @if (diagIsFinalized()) {
+            <button type="button" class="pw-btn" (click)="doViewDiagnosticoPdf()">Ver / Descargar PDF</button>
           }
         }
 

@@ -21,6 +21,10 @@ import { CartaSolicitudData, FichaRegistroData } from '../interfaces/pdf-data.in
  * Endpoint del backend:
  *   GET /api/pdf/ficha-registro/:fichaId    → PDF de una ficha de registro
  *                                              (dueño de la ficha o admin)
+ *
+ * Todos los métodos devuelven una blob URL para previsualizar en
+ * PdfPreviewDialogService — ningún método descarga el archivo directamente,
+ * la descarga la dispara el usuario desde el modal de vista previa.
  */
 @Injectable({ providedIn: 'root' })
 export class PdfService {
@@ -32,22 +36,22 @@ export class PdfService {
   // Formularios de inscripción (pdfmake en el frontend)
   // ──────────────────────────────────────────────────────────────────────────
 
-  /** Descarga la Carta de Solicitud de Interés (formulario de inscripción). */
-  async downloadCartaSolicitud(data: Partial<CartaSolicitudData>, fileName = 'carta-solicitud'): Promise<void> {
-    if (!this.isBrowser) return;
+  /** Genera el PDF de la Carta de Solicitud de Interés como blob URL. */
+  async getCartaSolicitudBlobUrl(data: Partial<CartaSolicitudData>): Promise<string> {
+    if (!this.isBrowser) throw new Error('PDF preview only available in browser.');
     const docDefinition = cartaSolicitudTemplate(data);
-    await this.pdfMakeDownload(docDefinition, fileName);
+    return this.pdfMakeBlobUrl(docDefinition);
   }
 
   /**
-   * Descarga la Ficha de Registro de un formulario de inscripción
-   * (EnrollmentForm — datos locales, no una ficha por estándar en BD).
-   * Para una ficha por estándar usa downloadFichaRegistroByFichaId().
+   * Genera el PDF de la Ficha de Registro de un formulario de inscripción
+   * (EnrollmentForm — datos locales, no una ficha por estándar en BD) como
+   * blob URL. Para una ficha por estándar usa getFichaRegistroBlobUrlByFichaId().
    */
-  async downloadFichaRegistro(data: Partial<FichaRegistroData> | null, fileName = 'ficha-registro'): Promise<void> {
-    if (!this.isBrowser || !data) return;
+  async getFichaRegistroFormBlobUrl(data: Partial<FichaRegistroData> | null): Promise<string> {
+    if (!this.isBrowser || !data) throw new Error('PDF preview only available in browser.');
     const docDefinition = fichaRegistroTemplate(data);
-    await this.pdfMakeDownload(docDefinition, fileName);
+    return this.pdfMakeBlobUrl(docDefinition);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -66,45 +70,34 @@ export class PdfService {
     return URL.createObjectURL(blob);
   }
 
-  /** Descarga directamente el PDF de una ficha de registro (por su id). */
-  async downloadFichaRegistroByFichaId(fichaId: string, fileName: string, token?: string | null): Promise<void> {
-    if (!this.isBrowser) return;
+  /** Obtiene el PDF de la Evaluación Diagnóstica de un proceso como blob URL para previsualizar/descargar. */
+  async getDiagnosticoBlobUrl(processId: string, token?: string | null): Promise<string> {
+    if (!this.isBrowser) throw new Error('PDF preview only available in browser.');
     if (!token) throw new Error('Se requiere autenticación para generar el PDF.');
 
-    const blob = await this.fetchRawBlob(`${this.baseUrl}/pdf/ficha-registro/${fichaId}`, token);
-    this.triggerDownload(blob, fileName);
+    const blob = await this.fetchRawBlob(`${this.baseUrl}/pdf/diagnostico/${processId}`, token);
+    return URL.createObjectURL(blob);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Helpers privados
   // ──────────────────────────────────────────────────────────────────────────
 
-  /** Descarga un PDF usando pdfmake en el browser (para formularios de inscripción). */
-  private async pdfMakeDownload(docDefinition: any, fileName: string): Promise<void> {
+  /** Genera un PDF con pdfmake en el browser y devuelve su blob URL. */
+  private async pdfMakeBlobUrl(docDefinition: any): Promise<string> {
     // Importación dinámica para no bloquear el bundle inicial
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
     const pdfMake = (pdfMakeModule as any).default ?? pdfMakeModule;
     const pdfFonts = (pdfFontsModule as any).default ?? pdfFontsModule;
     pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? pdfFonts?.vfs ?? pdfFonts?.default?.pdfMake?.vfs;
-    pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
+    const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(docDefinition).getBlob(resolve));
+    return URL.createObjectURL(blob);
   }
 
   /** Obtiene el PDF del backend como Blob. */
   private async fetchRawBlob(url: string, token: string): Promise<Blob> {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     return firstValueFrom(this.http.get(url, { headers, responseType: 'blob' }));
-  }
-
-  /** Dispara la descarga de un Blob en el browser. */
-  private triggerDownload(blob: Blob, fileName: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fileName}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 }

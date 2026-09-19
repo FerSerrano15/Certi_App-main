@@ -10,21 +10,48 @@
 .ep-empty h3 { font-size: 1.05rem; color: #0f172a; margin: 0 0 0.4rem; }
 .ep-empty p { font-size: 0.85rem; margin: 0; }
 
-.ep-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.ep-card {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.25rem;
-  flex-wrap: wrap; cursor: pointer; transition: border-color 0.15s;
-}
-.ep-card:hover { border-color: #99f6e4; }
-.ep-card-body { display: flex; flex-direction: column; gap: 0.15rem; }
-.ep-card-folio { font-size: 0.75rem; font-weight: 800; color: #0d9488; letter-spacing: 0.02em; }
-.ep-card-nombre { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
-.ep-card-candidato { font-size: 0.8rem; color: #64748b; }
-
 .ep-status {
   font-size: 0.72rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap;
   color: #64748b; background: #f1f5f9;
 }
 .ep-status[data-status="EMISION"], .ep-status[data-status="CIERRE"] { color: #047857; background: #ecfdf5; }
 .ep-status[data-status="AUN_NO_COMPETENTE"], .ep-status[data-status="CANCELADO"] { color: #b91c1c; background: #fef2f2; }
+
+/* ─── Grupos (vista tipo LMS) ──────────────────────────────────────────── */
+.ep-groups { display: flex; flex-direction: column; gap: 0.75rem; }
+.ep-group-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+.ep-group-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: none; border: none; padding: 1rem 1.25rem; cursor: pointer; text-align: left; font-family: inherit;
+}
+.ep-group-header:hover { background: #f8fafc; }
+.ep-group-info { display: flex; flex-direction: column; gap: 0.15rem; }
+.ep-group-estandar { font-size: 0.78rem; font-weight: 800; color: #0d9488; letter-spacing: 0.02em; }
+.ep-group-nombre { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.ep-group-meta { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.ep-group-count {
+  font-size: 0.75rem; font-weight: 700; color: #334155; background: #f1f5f9;
+  border-radius: 999px; padding: 0.3rem 0.7rem; white-space: nowrap;
+}
+.ep-chevron { color: #94a3b8; transition: transform 0.15s; flex-shrink: 0; }
+.ep-chevron.rotated { transform: rotate(180deg); }
+
+.ep-group-body { border-top: 1px solid #f1f5f9; padding: 1rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.ep-feedback { font-size: 0.85rem; color: #b45309; font-weight: 600; margin: 0; }
+
+.ep-roster { display: flex; flex-direction: column; gap: 0.4rem; }
+.ep-roster-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  background: #f8fafc; border-radius: 10px; padding: 0.6rem 0.85rem;
+}
+.ep-roster-info { display: flex; flex-direction: column; gap: 0.1rem; }
+.ep-roster-nombre { font-weight: 700; color: #0f172a; font-size: 0.85rem; }
+.ep-roster-email { font-size: 0.72rem; color: #94a3b8; }
+.ep-roster-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.ep-btn {
+  background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.5rem 0.9rem;
+  font-size: 0.8rem; font-weight: 700; color: #0f172a; cursor: pointer; white-space: nowrap;
+}
+.ep-btn:hover { background: #e2e8f0; }
+.ep-btn:disabled { opacity: 0.6; cursor: default; }

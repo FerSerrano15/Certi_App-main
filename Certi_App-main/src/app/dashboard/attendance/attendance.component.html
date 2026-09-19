@@ -72,10 +72,10 @@
             <div class="att-session-row" (click)="openSession(s)">
               <div class="att-session-num">{{ i + 1 }}</div>
               <div class="att-session-info">
-                <div class="att-session-title">{{ s.title }}</div>
+                <div class="att-session-title">{{ s.topic || ('Sesión del ' + (s.session_date | date:'dd/MM/yyyy')) }}</div>
                 <div class="att-session-meta">
                   📅 {{ s.session_date | date:'EEEE dd/MM/yyyy' }}
-                  @if (s.duration_hours) { · ⏱️ {{ s.duration_hours }}h }
+                  @if (s.start_time) { · 🕐 {{ s.start_time }}{{ s.end_time ? ' - ' + s.end_time : '' }} }
                 </div>
               </div>
               <div class="att-session-action">
@@ -97,7 +97,7 @@
         <span class="att-sep">/</span>
         <button class="att-back" (click)="backToSessions()">{{ selectedGroup()?.name }}</button>
         <span class="att-sep">/</span>
-        <span>{{ selectedSession()?.title }}</span>
+        <span>{{ selectedSession()?.topic || (selectedSession()?.session_date | date:'dd/MM/yyyy') }}</span>
       </div>
 
       <!-- Summary bar -->

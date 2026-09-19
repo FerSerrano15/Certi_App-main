@@ -1,0 +1,189 @@
+<div class="ga-wrap">
+
+  @if (openProcessId()) {
+    <app-process-workspace [processId]="openProcessId()!" (closed)="onProcessWorkspaceClosed()"></app-process-workspace>
+  } @else {
+
+  <div class="ga-header">
+    <div>
+      <h2 class="ga-title">Grupos</h2>
+      <p class="ga-sub">Control de los grupos de certificación ya formados, con sus candidatos y evaluador.</p>
+    </div>
+    <button type="button" class="ga-btn-primary" (click)="openFormarGrupo()">+ Formar Grupo</button>
+  </div>
+
+  <input
+    class="ga-search"
+    type="text"
+    placeholder="Buscar por estándar, evaluador o candidato…"
+    [value]="search()"
+    (input)="search.set($any($event.target).value)"
+  >
+
+  @if (loading()) {
+    <p class="ga-muted">Cargando…</p>
+  } @else if (!filteredGrupos().length) {
+    <div class="ga-empty">
+      @if (procesos().length === 0) {
+        <p>Aún no se ha formado ningún grupo. Usa "+ Formar Grupo" para crear el primero a partir de fichas de registro ya validadas.</p>
+      } @else {
+        <p>No hay grupos que coincidan con la búsqueda.</p>
+      }
+    </div>
+  } @else {
+    <div class="ga-list">
+      @for (g of filteredGrupos(); track g.key) {
+        <div class="ga-group-card">
+          <button type="button" class="ga-group-header" (click)="toggleExpand(g)">
+            <div class="ga-group-info">
+              <span class="ga-group-estandar">{{ g.estandarCodigo }} — {{ g.estandarNombre }}</span>
+              <span class="ga-group-curso">{{ g.cursoCodigo }} · {{ g.cursoNombre }}</span>
+              <span class="ga-group-evaluador">Evaluador: {{ g.evaluadorNombre }} ({{ g.evaluadorEmail }})</span>
+            </div>
+            <div class="ga-group-meta">
+              <span class="ga-group-count">{{ g.procesos.length }} candidato{{ g.procesos.length === 1 ? '' : 's' }}</span>
+              <svg class="ga-chevron" [class.rotated]="expandedKey() === g.key" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </button>
+
+          @if (expandedKey() === g.key) {
+            @if (actionFeedback()) { <p class="ga-feedback">{{ actionFeedback() }}</p> }
+            <div class="ga-candidatos">
+              @for (p of g.procesos; track p.id) {
+                <div class="ga-candidato-row">
+                  <div class="ga-candidato-info">
+                    <span class="ga-candidato-nombre">{{ p.participants?.full_name ?? '—' }}</span>
+                    <span class="ga-candidato-email">{{ p.participants?.email ?? '' }}</span>
+                  </div>
+                  <span class="ga-status" [attr.data-status]="p.status">{{ statusLabel(p.status) }}</span>
+                  <div class="ga-candidato-actions">
+                    @if (!p.candidate_enabled) {
+                      <button type="button" class="ga-btn" [disabled]="enablingId() === p.id" (click)="enableCandidato(p)">
+                        {{ enablingId() === p.id ? 'Habilitando…' : 'Habilitar acceso' }}
+                      </button>
+                    }
+                    <button type="button" class="ga-btn" (click)="openProceso(p)">Ver expediente</button>
+                    @if (canCancel(p)) {
+                      <button type="button" class="ga-btn ga-btn-danger" [disabled]="cancellingId() === p.id" (click)="cancelCandidato(p)">
+                        {{ cancellingId() === p.id ? 'Cancelando…' : 'Cancelar' }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="ga-group-footer">
+              @if (isFullyCancelled(g)) {
+                <button type="button" class="ga-btn ga-btn-danger" [disabled]="deletingKey() === g.key" (click)="deleteGrupo(g)">
+                  {{ deletingKey() === g.key ? 'Eliminando…' : 'Eliminar grupo' }}
+                </button>
+              } @else {
+                <button type="button" class="ga-btn ga-btn-danger" (click)="cancelGrupo(g)">Cancelar grupo completo</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  }
+
+  @if (showFormarGrupo()) {
+    <div class="fg-backdrop" (click)="closeFormarGrupo()">
+      <div class="fg-box" (click)="$event.stopPropagation()">
+        <div class="fg-header">
+          <h3 class="fg-title">Formar Grupo</h3>
+          <button type="button" class="fg-close" (click)="closeFormarGrupo()" aria-label="Cerrar">✕</button>
+        </div>
+
+        <div class="fg-body">
+          <div class="fg-field">
+            <label class="fg-label">Estándar de competencia</label>
+            @if (loadingEstandares()) {
+              <p class="fg-hint">Cargando estándares…</p>
+            } @else if (!estandaresDisponibles().length) {
+              <p class="fg-hint">No hay fichas de registro validadas todavía. Valídalas primero en "Solicitudes de Ficha".</p>
+            } @else {
+              <select class="fg-input" [ngModel]="formarGrupoEstandarId()" (ngModelChange)="onFormarGrupoEstandarChange($event)">
+                <option value="" disabled>Selecciona un estándar…</option>
+                @for (e of estandaresDisponibles(); track e.id) {
+                  <option [value]="e.id">{{ e.codigo }} — {{ e.nombre }}</option>
+                }
+              </select>
+            }
+          </div>
+
+          @if (formarGrupoEstandarId()) {
+            @if (loadingDisponibles()) {
+              <p class="fg-hint">Cargando candidatos disponibles…</p>
+            } @else if (fichasDisponibles().length === 0) {
+              <p class="fg-hint">No hay candidatos disponibles para este estándar (ya están todos en un grupo, o no hay fichas validadas).</p>
+            } @else {
+              <div class="fg-field">
+                <label class="fg-label">Candidatos ({{ selectedFichaIds().size }} de {{ fichasDisponibles().length }} seleccionados)</label>
+                <div class="fg-candidatos">
+                  @for (f of fichasDisponibles(); track f.id) {
+                    <label class="fg-candidato-row">
+                      <input type="checkbox" [checked]="isFichaSelected(f.id)" (change)="toggleFicha(f.id, $any($event.target).checked)">
+                      <span class="fg-candidato-nombre">{{ f.users?.full_name ?? '—' }}</span>
+                      <span class="fg-candidato-email">{{ f.users?.email ?? '' }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+
+              <div class="fg-field">
+                <label class="fg-label">Evaluador calificado</label>
+                @if (evaluatorsLoading()) {
+                  <p class="fg-hint">Cargando evaluadores…</p>
+                } @else if (qualifiedEvaluators().length === 0) {
+                  <p class="fg-hint">No hay evaluadores calificados para este estándar.</p>
+                } @else {
+                  <div class="fg-evaluadores">
+                    @for (ev of qualifiedEvaluators(); track ev.evaluator_id) {
+                      <label class="fg-evaluador-row">
+                        <input type="radio" name="fg-evaluador" [value]="ev.evaluator_id" [checked]="chosenEvaluatorId() === ev.evaluator_id" (change)="chosenEvaluatorId.set(ev.evaluator_id)">
+                        <span>{{ ev.full_name }}</span>
+                        <span class="fg-candidato-email">{{ ev.email }}</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          @if (formarGrupoFeedback()) {
+            <p class="fg-feedback">{{ formarGrupoFeedback() }}</p>
+          }
+
+          @if (formarGrupoResults(); as results) {
+            <div class="fg-results">
+              @for (r of results; track r.ficha_id) {
+                <div class="fg-result-row" [class.ok]="r.ok" [class.error]="!r.ok">
+                  {{ r.ok ? '✅ Folio ' + r.folio : '❌ ' + r.error }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="fg-actions">
+          <button type="button" class="fg-btn-cancel" (click)="closeFormarGrupo()">Cerrar</button>
+          <button
+            type="button"
+            class="fg-btn-primary"
+            [disabled]="formingGroup() || !formarGrupoEstandarId() || selectedFichaIds().size === 0"
+            (click)="submitFormarGrupo()"
+          >
+            {{ formingGroup() ? 'Formando grupo…' : 'Formar grupo (' + selectedFichaIds().size + ')' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

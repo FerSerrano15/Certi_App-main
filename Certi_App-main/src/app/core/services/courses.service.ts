@@ -53,9 +53,10 @@ export interface EligibleEvaluator {
 export interface CourseSession {
   id: string;
   group_id: string;
-  title: string;
   session_date: string;
-  duration_hours: number;
+  start_time: string | null;
+  end_time: string | null;
+  topic: string | null;
   created_at: string;
 }
 
@@ -174,7 +175,7 @@ export class CoursesService {
     catch { return []; }
   }
 
-  async createSession(data: { group_id: string; title: string; session_date: string; duration_hours?: number }): Promise<CourseSession | null> {
+  async createSession(data: { group_id: string; session_date: string; start_time?: string; end_time?: string; topic?: string }): Promise<CourseSession | null> {
     try { return await firstValueFrom(this.api.post<CourseSession>('/sessions', data, this.token())); }
     catch { return null; }
   }

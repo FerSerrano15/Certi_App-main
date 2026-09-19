@@ -5,6 +5,31 @@ import { AuthService } from './auth.service';
 
 export interface Readiness { ready: boolean; missing: string[] }
 
+export type DiagnosticQuestionType = 'opcion_multiple' | 'abierta' | 'unir_reactivos';
+
+export interface DiagnosticQuestion {
+  id: string;
+  estandar_id: string;
+  type: DiagnosticQuestionType;
+  prompt: string;
+  options: Array<{ id: string; text?: string; left?: string; right?: string }>;
+  correct_option_id: string | null;
+  order_index: number;
+  points: number;
+}
+
+export interface DiagnosticMatchAnswer { right_id: string; selected_left_id: string }
+
+export interface DiagnosticAnswer {
+  question_id: string;
+  selected_option_id?: string;
+  text?: string;
+  matches?: DiagnosticMatchAnswer[];
+  correct?: boolean | null;
+  hits?: number;
+  total?: number;
+}
+
 export interface ReactivoRow {
   id: string;
   process_id: string;
@@ -36,13 +61,37 @@ export class StagesService {
     catch { return fallback; }
   }
 
+  /** El evaluador/admin decide si el candidato puede ver esta etapa — reemplaza el badge de estado en su vista. */
+  setStageCandidateAccess(id: string, stageCode: string, enabled: boolean) {
+    return this.post(`${this.base(id)}/stages/${stageCode}/candidate-access`, { enabled });
+  }
+
   // 1) Derechos y obligaciones
   getRights(id: string) { return this.get<{ accepted: boolean; content: Record<string, unknown> } | null>(`${this.base(id)}/rights`, null); }
   acceptRights(id: string, accepted: boolean) { return this.post(`${this.base(id)}/rights`, { accepted }); }
 
   // 2) Diagnóstico
   getDiagnostic(id: string) { return this.get<Record<string, unknown> | null>(`${this.base(id)}/diagnostic`, null); }
-  saveDiagnostic(id: string, result: string, observations?: string) { return this.post(`${this.base(id)}/diagnostic`, { result, observations }); }
+
+  /** El evaluador elige la modalidad (presencial / en_linea) — arranca la etapa. */
+  startDiagnostic(id: string, modality: 'presencial' | 'en_linea') {
+    return this.post(`${this.base(id)}/diagnostic/start`, { modality });
+  }
+
+  /** Banco de preguntas del estándar de este proceso (para renderizar el examen o repasarlo). */
+  getDiagnosticQuestions(id: string) {
+    return this.get<DiagnosticQuestion[]>(`${this.base(id)}/diagnostic/questions`, []);
+  }
+
+  /** El candidato envía sus respuestas (modalidad en línea) — se autocalifica lo objetivo. */
+  submitDiagnosticAnswers(id: string, answers: DiagnosticAnswer[], candidate_signature?: string) {
+    return this.post(`${this.base(id)}/diagnostic/answers`, { answers, candidate_signature });
+  }
+
+  /** El evaluador revisa y cierra la etapa (resultado, observaciones, decisión, firma). */
+  saveDiagnostic(id: string, result: string, observations?: string, data?: Record<string, unknown>) {
+    return this.post(`${this.base(id)}/diagnostic`, { result, observations, data });
+  }
 
   // 3) Carta compromiso
   getCommitment(id: string) { return this.get<Record<string, unknown> | null>(`${this.base(id)}/commitment`, null); }

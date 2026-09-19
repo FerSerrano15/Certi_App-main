@@ -6,6 +6,8 @@ import {
 import { CertificationProcessService } from './certification-process.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateProcessDto } from './dto/create-process.dto';
+import { FormarGrupoDto } from './dto/formar-grupo.dto';
+import { DeleteGroupDto } from './dto/delete-group.dto';
 
 interface Req extends Request {
   user: { id: string; role: string; email: string };
@@ -40,5 +42,26 @@ export class CertificationProcessController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateProcessDto, @Request() req: Req) {
     return this.svc.create(dto, req.user);
+  }
+
+  @Post('formar-grupo')
+  @HttpCode(HttpStatus.CREATED)
+  formarGrupo(@Body() dto: FormarGrupoDto, @Request() req: Req) {
+    return this.svc.formarGrupo(dto, req.user);
+  }
+
+  @Post(':id/cancel')
+  cancelProcess(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
+    return this.svc.cancelProcess(id, req.user);
+  }
+
+  @Post(':id/enable-candidate')
+  enableForCandidate(@Param('id', ParseUUIDPipe) id: string, @Request() req: Req) {
+    return this.svc.enableForCandidate(id, req.user);
+  }
+
+  @Post('delete-group')
+  deleteCancelledGroup(@Body() dto: DeleteGroupDto, @Request() req: Req) {
+    return this.svc.deleteCancelledGroup(dto, req.user);
   }
 }
